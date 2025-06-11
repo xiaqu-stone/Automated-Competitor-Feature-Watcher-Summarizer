@@ -159,6 +159,45 @@
         </div>
     </div>
 
+    <!-- Competitor Selection -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card card-dashboard">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-buildings"></i> Select Competitor
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for competitor_id, config in competitors.items() %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card competitor-card h-100 {% if selected_competitor == competitor_id %}selected{% endif %}" 
+                                 data-competitor="{{ competitor_id }}" onclick="selectCompetitor('{{ competitor_id }}')">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-building text-{{ config.color }}"></i> {{ config.name }}
+                                    </h5>
+                                    <p class="card-text small text-muted">
+                                        {% if competitor_id == 'grab' %}
+                                        Live scraping + Dynamic articles
+                                        {% else %}
+                                        Demo mode + Sample articles  
+                                        {% endif %}
+                                    </p>
+                                    {% if selected_competitor == competitor_id %}
+                                    <span class="badge bg-{{ config.color }}">Selected</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="row mt-4">
         <div class="col-12 text-center">
@@ -206,6 +245,43 @@ function startAnalysis() {
         console.error('Error:', error);
         alert('Network error: ' + error.message);
         location.reload();
+    });
+}
+
+// Competitor selection function
+function selectCompetitor(competitorId) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.competitor-card').forEach(card => {
+        card.classList.remove('selected');
+        const badge = card.querySelector('.badge');
+        if (badge) badge.remove();
+    });
+    
+    // Add selected class to clicked card
+    const selectedCard = document.querySelector(`[data-competitor="${competitorId}"]`);
+    selectedCard.classList.add('selected');
+    
+    // Add badge
+    const cardBody = selectedCard.querySelector('.card-body');
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-primary';
+    badge.textContent = 'Selected';
+    cardBody.appendChild(badge);
+    
+    // Send selection to server
+    fetch('/select-competitor', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({competitor: competitorId})
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Competitor selected:', data.message);
+    })
+    .catch(error => {
+        console.error('Error selecting competitor:', error);
     });
 }
 

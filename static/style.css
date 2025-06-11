@@ -105,4 +105,34 @@
     .card-dashboard {
         margin-bottom: 1rem;
     }
-} 
+}
+
+/* Competitor selection card styles */
+.competitor-card {
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    border: 2px solid transparent;
+}
+
+.competitor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.competitor-card.selected {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);
+}
+
+.competitor-card .card-title {
+    margin-bottom: 0.75rem;
+}
+
+.competitor-card .badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}

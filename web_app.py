@@ -51,6 +51,84 @@ from mvp_demo import (
     CACHE_FILE, BASE_URL, ARTICLE_LINK_SELECTOR
 )
 
+# Multi-Competitor Configuration
+COMPETITORS = {
+    'grab': {
+        'name': 'Grab',
+        'base_url': 'https://www.grab.com/sg/press/',
+        'selector': 'div.elementor-post__text > h3 > a',
+        'cache_file': 'grab_articles.txt',
+        'color': 'success',
+        'demo_articles': [
+            {
+                'url': 'https://www.grab.com/sg/press/others/grab-introduces-grabfood-dine-in-beta/',
+                'title': 'Grab Introduces GrabFood Dine-in BETA',
+                'publish_date': '2025-01-15T00:00:00',
+                'category': 'Product Launch',
+                'description': 'Grab launches new dine-in ordering feature for restaurants'
+            },
+            {
+                'url': 'https://www.grab.com/sg/press/others/grab-reports-fourth-quarter-and-full-year-2024-results/',
+                'title': 'Grab Reports Fourth Quarter and Full Year 2024 Results',
+                'publish_date': '2025-01-10T00:00:00',
+                'category': 'Financial Results',
+                'description': 'Quarterly financial results and business updates'
+            },
+            {
+                'url': 'https://www.grab.com/sg/press/consumers/grabshares-new-data-insights-on-e-hailing-and-food-delivery-trends-in-malaysia/',
+                'title': 'GrabShares New Data Insights on E-hailing and Food Delivery Trends in Malaysia',
+                'publish_date': '2025-01-08T00:00:00',
+                'category': 'Market Insights',
+                'description': 'Data insights on transportation and delivery trends'
+            },
+            {
+                'url': 'https://www.grab.com/sg/press/others/grab-and-starbucks-expand-partnership-across-southeast-asia/',
+                'title': 'Grab and Starbucks Expand Partnership Across Southeast Asia',
+                'publish_date': '2025-01-05T00:00:00',
+                'category': 'Partnership',
+                'description': 'Strategic partnership expansion announcement'
+            }
+        ]
+    },
+    'foodme': {
+        'name': 'FoodMe',
+        'base_url': 'https://www.foodme.asia/news/',
+        'selector': 'article.news-item h2 > a',
+        'cache_file': 'foodme_articles.txt',
+        'color': 'warning',
+        'demo_articles': [
+            {
+                'url': 'https://www.foodme.asia/news/foodme-launches-ai-powered-restaurant-recommendations/',
+                'title': 'FoodMe Launches AI-Powered Restaurant Recommendations',
+                'publish_date': '2025-01-14T00:00:00',
+                'category': 'AI Innovation',
+                'description': 'New AI-driven recommendation engine for personalized dining experiences'
+            },
+            {
+                'url': 'https://www.foodme.asia/news/foodme-introduces-premium-membership-program/',
+                'title': 'FoodMe Introduces Premium Membership Program',
+                'publish_date': '2025-01-12T00:00:00',
+                'category': 'Product Launch',
+                'description': 'New subscription service with exclusive restaurant access and benefits'
+            },
+            {
+                'url': 'https://www.foodme.asia/news/foodme-expands-to-5-new-cities-in-southeast-asia/',
+                'title': 'FoodMe Expands to 5 New Cities in Southeast Asia',
+                'publish_date': '2025-01-09T00:00:00',
+                'category': 'Expansion',
+                'description': 'Market expansion into Thailand, Vietnam, and Philippines'
+            },
+            {
+                'url': 'https://www.foodme.asia/news/foodme-partners-with-local-farmers-for-sustainable-dining/',
+                'title': 'FoodMe Partners with Local Farmers for Sustainable Dining',
+                'publish_date': '2025-01-06T00:00:00',
+                'category': 'Sustainability',
+                'description': 'Farm-to-table initiative supporting local agriculture'
+            }
+        ]
+    }
+}
+
 app = Flask(__name__)
 
 # Global state management
@@ -64,7 +142,9 @@ app_state = {
     'logs': [],
     'start_time': None,
     'end_time': None,
-    'article_metadata': {}  # Store article info by URL
+    'article_metadata': {},  # Store article info by URL
+    'selected_competitor': 'grab',  # Default competitor
+    'available_competitors': list(COMPETITORS.keys())
 }
 
 # Thread-safe queue for real-time logs
@@ -212,23 +292,37 @@ def run_analysis_task():
             processed_urls = load_processed_urls(CACHE_FILE)
             app_state['current_task'] = 'Cache loaded'
             
-            # Get article URLs
-            print("🔍 Getting article URL list...")
-            result = get_article_urls(BASE_URL, ARTICLE_LINK_SELECTOR)
+            # Get selected competitor configuration
+            competitor_config = COMPETITORS[app_state['selected_competitor']]
+            competitor_name = competitor_config['name']
             
-            # Handle both old and new function signatures
-            if isinstance(result, tuple):
-                all_urls, articles = result
-                # Store article metadata
-                for article in articles:
-                    app_state['article_metadata'][article['url']] = article
+            print(f"🔍 Getting article URL list for {competitor_name}...")
+            
+            # Try dynamic fetching for Grab, use demo data for others
+            if app_state['selected_competitor'] == 'grab':
+                result = get_article_urls(competitor_config['base_url'], competitor_config['selector'])
+                
+                # Handle both old and new function signatures
+                if isinstance(result, tuple):
+                    all_urls, articles = result
+                    # Store article metadata
+                    for article in articles:
+                        app_state['article_metadata'][article['url']] = article
+                else:
+                    # Fallback for old signature
+                    all_urls = result
+                    articles = []
             else:
-                # Fallback for old signature
-                all_urls = result
-                articles = []
+                # Use demo data for other competitors
+                demo_articles = competitor_config['demo_articles']
+                all_urls = [article['url'] for article in demo_articles]
+                for article in demo_articles:
+                    app_state['article_metadata'][article['url']] = article
+                articles = demo_articles
+                print(f"Using demo data for {competitor_name} ({len(all_urls)} articles)")
             
             app_state['total_articles'] = len(all_urls)
-            app_state['current_task'] = f'Found {len(all_urls)} articles'
+            app_state['current_task'] = f'Found {len(all_urls)} articles from {competitor_name}'
             
             # Filter new URLs
             new_urls = [url for url in all_urls if url not in processed_urls]
@@ -294,7 +388,22 @@ def run_analysis_task():
 @app.route('/')
 def index():
     """Main page"""
-    return render_template('index.html', state=app_state)
+    return render_template('index.html', 
+                         state=app_state, 
+                         competitors=COMPETITORS,
+                         selected_competitor=app_state['selected_competitor'])
+
+@app.route('/select-competitor', methods=['POST'])
+def select_competitor():
+    """Select a competitor for analysis"""
+    data = request.get_json()
+    competitor_id = data.get('competitor')
+    
+    if competitor_id not in COMPETITORS:
+        return jsonify({'error': 'Invalid competitor'}), 400
+    
+    app_state['selected_competitor'] = competitor_id
+    return jsonify({'message': f'Selected {COMPETITORS[competitor_id]["name"]}'})
 
 @app.route('/start', methods=['POST'])
 def start_analysis():
@@ -312,7 +421,8 @@ def start_analysis():
         'results': [],
         'logs': [],
         'start_time': None,
-        'end_time': None
+        'end_time': None,
+        'article_metadata': {}  # Clear previous article metadata
     })
     
     # Clear log queue
