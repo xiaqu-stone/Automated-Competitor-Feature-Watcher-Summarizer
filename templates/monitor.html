@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}实时监控 - ACFWS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-display"></i> 实时分析监控</h2>
+            <p class="text-muted">监控竞品功能分析的实时进度和日志输出</p>
+        </div>
+    </div>
+    
+    <!-- Status Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">状态</h5>
+                    <span id="status-badge" class="badge fs-6 status-{{ state.status }}">
+                        {% if state.status == 'ready' %}
+                            准备就绪
+                        {% elif state.status == 'running' %}
+                            分析中
+                        {% elif state.status == 'completed' %}
+                            完成
+                        {% elif state.status == 'error' %}
+                            错误
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">进度</h5>
+                    <div class="progress mb-2">
+                        <div id="progress-bar" class="progress-bar" role="progressbar" 
+                             style="width: {{ state.progress }}%">
+                        </div>
+                    </div>
+                    <small id="progress-text">{{ state.progress }}%</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">文章数</h5>
+                    <h4 id="article-count">{{ state.processed_articles }}/{{ state.total_articles }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">运行时间</h5>
+                    <h4 id="runtime">
+                        {% if state.start_time %}
+                            <span class="text-primary">运行中</span>
+                        {% else %}
+                            --:--
+                        {% endif %}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Task -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-gear"></i> 当前任务
+                    </h5>
+                    <p id="current-task" class="mb-0">
+                        {{ state.current_task or '等待启动分析任务' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Real-time Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-terminal"></i> 实时日志
+                    </h5>
+                    <div>
+                        <button id="clear-logs" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-trash"></i> 清空
+                        </button>
+                        <button id="auto-scroll" class="btn btn-sm btn-outline-primary active">
+                            <i class="bi bi-arrow-down"></i> 自动滚动
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="log-container" class="log-container">
+                        <div id="logs">
+                            {% if state.status == 'ready' %}
+                            <div>[系统] 等待启动分析任务...</div>
+                            <div>[提示] 点击"开始分析"按钮启动竞品功能监控</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Control Panel -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            {% if state.status != 'running' %}
+            <button id="start-btn" class="btn btn-success me-2">
+                <i class="bi bi-play-fill"></i> 开始分析
+            </button>
+            {% endif %}
+            
+            <a href="/results" class="btn btn-primary">
+                <i class="bi bi-file-text"></i> 查看结果
+            </a>
+            
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-house"></i> 返回首页
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let eventSource;
+let autoScroll = true;
+let startTime = null;
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateRuntime() {
+    if (startTime) {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById('runtime').textContent = formatTime(elapsed);
+    }
+}
+
+function connectEventSource() {
+    if (eventSource) {
+        eventSource.close();
+    }
+    
+    eventSource = new EventSource('/logs');
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.log) {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = data.log;
+            logsDiv.appendChild(logEntry);
+            
+            // Auto-scroll to bottom
+            if (autoScroll) {
+                const container = document.getElementById('log-container');
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    };
+    
+    eventSource.onerror = function(event) {
+        console.log('EventSource failed:', event);
+        // Try to reconnect after 3 seconds
+        setTimeout(connectEventSource, 3000);
+    };
+}
+
+function updateStatus() {
+    fetch('/status')
+        .then(response => response.json())
+        .then(data => {
+            // Update status badge
+            const statusBadge = document.getElementById('status-badge');
+            statusBadge.className = statusBadge.className.replace(/status-\w+/g, '');
+            statusBadge.classList.add(`status-${data.status}`);
+            
+            let statusText = '';
+            switch(data.status) {
+                case 'ready': statusText = '准备就绪'; break;
+                case 'running': statusText = '分析中'; break;
+                case 'completed': statusText = '完成'; break;
+                case 'error': statusText = '错误'; break;
+            }
+            statusBadge.textContent = statusText;
+            
+            // Update progress
+            document.getElementById('progress-bar').style.width = data.progress + '%';
+            document.getElementById('progress-text').textContent = data.progress + '%';
+            
+            // Update article count
+            document.getElementById('article-count').textContent = 
+                `${data.processed_articles}/${data.total_articles}`;
+            
+            // Update current task
+            document.getElementById('current-task').textContent = 
+                data.current_task || '等待启动分析任务';
+            
+            // Update start time
+            if (data.start_time && !startTime) {
+                startTime = new Date(data.start_time).getTime();
+            }
+            
+            if (data.status === 'completed' || data.status === 'error') {
+                startTime = null;
+                document.getElementById('runtime').innerHTML = 
+                    '<span class="text-success">已完成</span>';
+                if (eventSource) {
+                    eventSource.close();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Status update failed:', error);
+        });
+}
+
+// Event listeners
+document.getElementById('clear-logs').addEventListener('click', function() {
+    document.getElementById('logs').innerHTML = '';
+});
+
+document.getElementById('auto-scroll').addEventListener('click', function() {
+    autoScroll = !autoScroll;
+    this.classList.toggle('active');
+    
+    if (autoScroll) {
+        this.innerHTML = '<i class="bi bi-arrow-down"></i> 自动滚动';
+        const container = document.getElementById('log-container');
+        container.scrollTop = container.scrollHeight;
+    } else {
+        this.innerHTML = '<i class="bi bi-pause"></i> 手动滚动';
+    }
+});
+
+const startBtn = document.getElementById('start-btn');
+if (startBtn) {
+    startBtn.addEventListener('click', function() {
+        fetch('/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                this.style.display = 'none';
+                connectEventSource();
+            } else if (data.error) {
+                alert('启动失败: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Start failed:', error);
+            alert('启动失败，请检查网络连接');
+        });
+    });
+}
+
+// Initialize
+if ('{{ state.status }}' === 'running') {
+    connectEventSource();
+    startTime = new Date('{{ state.start_time }}').getTime();
+}
+
+// Update status every 2 seconds
+setInterval(updateStatus, 2000);
+setInterval(updateRuntime, 1000);
+
+// Initial status update
+updateStatus();
+</script>
+{% endblock %} 
