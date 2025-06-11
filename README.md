@@ -23,7 +23,10 @@ Get your API key from: https://makersuite.google.com/app/apikey
 ```bash
 python web_app.py
 ```
-Then open your browser to `http://localhost:5000`
+The app will automatically find an available port (starting from 8080) and display the URL.
+
+**How to stop the web service:**
+- Press `Ctrl+C` in the terminal where the service is running
 
 #### Option B: Command Line
 ```bash

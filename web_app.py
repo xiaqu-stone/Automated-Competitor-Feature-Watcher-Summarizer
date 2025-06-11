@@ -210,6 +210,30 @@ def results():
     return render_template('results.html', state=app_state)
 
 if __name__ == '__main__':
+    import socket
+    
+    # Find available port starting from 8080
+    def find_free_port(start_port=8080):
+        for port in range(start_port, start_port + 100):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.bind(('localhost', port))
+                sock.close()
+                return port
+            except OSError:
+                continue
+        return None
+    
+    port = find_free_port()
+    if port is None:
+        print("❌ 无法找到可用端口")
+        exit(1)
+    
     print("🚀 ACFWS Web演示启动中...")
-    print("📱 请在浏览器中访问: http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    print(f"📱 请在浏览器中访问: http://localhost:{port}")
+    print("⭐ 提示: 使用 Ctrl+C 停止服务")
+    
+    try:
+        app.run(debug=True, host='0.0.0.0', port=port)
+    except KeyboardInterrupt:
+        print("\n👋 服务已停止") 
