@@ -162,12 +162,15 @@ function updateStatus() {
     fetch('/status')
     .then(response => response.json())
     .then(data => {
-        // Update progress bar
+        // Update progress bar and percentage
         const progressBar = document.querySelector('.progress-bar');
         progressBar.style.width = data.progress + '%';
         
+        const progressText = document.querySelector('.progress').nextElementSibling;
+        progressText.textContent = data.progress + '%';
+        
         // Update status
-        const statusElements = document.querySelectorAll('.status-' + data.status);
+        const statusElements = document.querySelectorAll('[class*="status-"]');
         statusElements.forEach(el => {
             if (data.status === 'ready') el.textContent = 'Ready';
             else if (data.status === 'running') el.textContent = 'Running';
@@ -175,8 +178,18 @@ function updateStatus() {
             else if (data.status === 'error') el.textContent = 'Error';
         });
         
-        // Update article count
-        document.querySelector('h5').textContent = data.processed_articles + '/' + data.total_articles;
+        // Update article count - find the correct h5 element
+        const articleCards = document.querySelectorAll('.card');
+        articleCards.forEach(card => {
+            const header = card.querySelector('h6');
+            if (header && header.textContent === 'Articles') {
+                const countElement = card.querySelector('h5');
+                countElement.textContent = data.processed_articles + '/' + data.total_articles;
+            }
+        });
+        
+        // Update runtime
+        updateRuntime(data);
         
         // If completed or error, refresh page to show final status
         if (data.status === 'completed' || data.status === 'error') {
@@ -186,6 +199,31 @@ function updateStatus() {
         }
     })
     .catch(error => console.error('Status update error:', error));
+}
+
+// Update runtime display
+function updateRuntime(data) {
+    const runtimeElement = document.getElementById('runtime');
+    
+    if (data.start_time) {
+        const startTime = new Date(data.start_time);
+        let endTime = data.end_time ? new Date(data.end_time) : new Date();
+        
+        const diffMs = endTime - startTime;
+        const diffSecs = Math.floor(diffMs / 1000);
+        const minutes = Math.floor(diffSecs / 60);
+        const seconds = diffSecs % 60;
+        
+        if (data.status === 'completed') {
+            runtimeElement.innerHTML = `<span class="text-success">${minutes}m ${seconds}s</span>`;
+        } else if (data.status === 'error') {
+            runtimeElement.innerHTML = `<span class="text-danger">${minutes}m ${seconds}s</span>`;
+        } else if (data.status === 'running') {
+            runtimeElement.innerHTML = `<span class="text-info">${minutes}m ${seconds}s</span>`;
+        }
+    } else {
+        runtimeElement.innerHTML = '<span class="text-muted">Not started</span>';
+    }
 }
 
 // Start monitoring

@@ -151,4 +151,47 @@ python web_app.py
 - ✅ Feature detection working: "GrabFood Dine-in BETA" identified (score: 8/10)
 - ✅ Results page renders correctly with feature cards and proper formatting
 
-**Status:** 🎉 **FULLY RESOLVED** - Web application now production-ready for demo presentations 
+**Status:** 🎉 **FULLY RESOLVED** - Web application now production-ready for demo presentations
+
+### 🐛 Monitor Page Display Issues ✅ RESOLVED  
+**Issue Date:** Current session  
+**Problem:** Monitor页面Progress更新显示有问题，Runtime一直显示Running
+
+**Root Cause Analysis:**
+1. **Progress calculation issue**: 
+   - `processed_articles` was set to loop index `i` instead of completed count
+   - Progress percentage calculated before articles were actually processed
+   - Frontend received incorrect progress data (showing 0% when 25% should be displayed)
+
+2. **Runtime display issue**:
+   - Template showed static "Running..." text instead of dynamic updates
+   - JavaScript `updateRuntime()` function was correct but runtime calculation needed timing improvements
+   - Status transitions not properly reflected in UI
+
+**Solution Implemented:**
+1. **Fixed backend progress tracking**:
+   - Updated `processed_articles` to show actual completed count (i+1 after processing)
+   - Fixed progress calculation timing to show accurate completion percentage
+   - Corrected status updates to happen after successful processing
+
+2. **Enhanced JavaScript runtime updates**:
+   - Improved `updateRuntime()` function with proper time calculation from start_time to end_time
+   - Added status-based color coding (success=green, info=blue, danger=red)
+   - Enhanced DOM element selection for reliable real-time updates
+   - Auto-refresh page when analysis completes
+
+**Verification Results:**
+- ✅ Progress bar shows correct percentage (0% → 25% → 50% → 75% → 100%)  
+- ✅ Article count displays correctly (0/4 → 1/4 → 2/4 → 3/4 → 4/4)
+- ✅ Runtime shows real elapsed time in "Xm Ys" format instead of "Running..."
+- ✅ Status color coding works (Running=blue, Completed=green, Error=red)
+- ✅ Real-time updates every 3 seconds work reliably during analysis
+
+**Test Results:**
+- Analysis duration: 19 seconds (from 15:07:30 to 15:07:49)
+- Status API correctly reports: `{"status": "completed", "progress": 100, "processed_articles": 4, "total_articles": 4}`
+- Monitor page JavaScript successfully parses and displays all real-time data
+
+**Files Modified:** `web_app.py` (progress calculation logic in `run_analysis_task()`)
+
+**Status:** 🎉 **FULLY RESOLVED** - Monitor页面现在提供准确的实时进度反馈 

@@ -229,8 +229,6 @@ def run_analysis_task():
             # Process each new article
             results = []
             for i, url in enumerate(new_urls):
-                app_state['processed_articles'] = i
-                app_state['progress'] = int((i / len(new_urls)) * 100)
                 app_state['current_task'] = f'Analyzing article {i+1}/{len(new_urls)}'
                 
                 print(f"\n📖 Processing article {i+1}/{len(new_urls)}: {url}")
@@ -258,6 +256,10 @@ def run_analysis_task():
                         print(f"  ❌ AI analysis failed: {analysis}")
                 else:
                     print(f"  ⚠️  Article content retrieval failed or content too short")
+                
+                # Update progress after processing each article
+                app_state['processed_articles'] = i + 1  # Show completed articles (1-based)
+                app_state['progress'] = int(((i + 1) / len(new_urls)) * 100)
                 
                 time.sleep(0.5)  # Small delay for demo effect
             
