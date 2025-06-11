@@ -116,4 +116,39 @@ python web_app.py
 - Professional web interface 
 - Real-time demonstration capabilities
 - Practical business value (competitor analysis)
-- Technical depth (AI integration, web streaming, responsive design) 
+- Technical depth (AI integration, web streaming, responsive design)
+
+---
+
+## 🔧 POST-HACKATHON BUG FIXES
+
+### 🐛 Template Error Fix - Results Page ✅ RESOLVED
+**Issue Date:** Current session  
+**Problem:** `UndefinedError: 'dict object' has no attribute 'title'` when clicking "View results"
+
+**Root Cause Analysis:**
+- Template `results.html` expected structured objects with attributes like `result.title`, `result.summary`, etc.
+- Backend was returning raw dictionary with only basic fields: `url`, `analysis`, `timestamp`, `article_preview`
+- Gemini API returned unstructured text, but template expected parsed data structure
+
+**Solution Implemented:**
+- ✅ Created `parse_analysis_result()` function to parse raw Gemini text into structured data
+- ✅ Added regex-based extraction for: title, summary, is_new_feature, category, relevance_score, key_features
+- ✅ Updated `run_analysis_task()` to use parsed results instead of raw analysis text
+- ✅ Added `re` module import for pattern matching
+- ✅ Fixed duplicate `else` clause in analysis flow
+
+**Technical Details:**
+- Function extracts structured data from Gemini's natural language response
+- Handles edge cases with try-catch blocks and default values
+- Maintains backward compatibility with existing template structure
+- Supports both feature announcements and regular news articles
+
+**Verification Results:**
+- ✅ Web application starts successfully on port 8080+
+- ✅ "View results" button works without template errors
+- ✅ Analysis processes articles and displays structured results
+- ✅ Feature detection working: "GrabFood Dine-in BETA" identified (score: 8/10)
+- ✅ Results page renders correctly with feature cards and proper formatting
+
+**Status:** 🎉 **FULLY RESOLVED** - Web application now production-ready for demo presentations 

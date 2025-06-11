@@ -8,11 +8,46 @@ import sys
 import io
 from contextlib import redirect_stdout
 import os
+import requests
+import re
+
+# Configure proxy settings
+def setup_proxy():
+    """Configure proxy for network requests"""
+    # Check if proxy is already configured via environment
+    if os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy'):
+        print(f"🌐 Using existing proxy configuration: {os.environ.get('HTTP_PROXY', os.environ.get('http_proxy'))}")
+        return
+    
+    # Default proxy settings - commonly used proxy ports
+    # You can modify these settings according to your proxy configuration
+    proxy_host = os.environ.get('PROXY_HOST', '127.0.0.1')
+    proxy_port = os.environ.get('PROXY_PORT', '7890')
+    proxy_url = f"http://{proxy_host}:{proxy_port}"
+    
+    proxy_settings = {
+        'http': proxy_url,
+        'https': proxy_url,
+    }
+    
+    # Set proxy for requests library and other libraries
+    os.environ['HTTP_PROXY'] = proxy_settings['http']
+    os.environ['HTTPS_PROXY'] = proxy_settings['https']
+    os.environ['http_proxy'] = proxy_settings['http']
+    os.environ['https_proxy'] = proxy_settings['https']
+    
+    print(f"🌐 Proxy configured: {proxy_url}")
+    print(f"💡 You can customize proxy by setting PROXY_HOST and PROXY_PORT environment variables")
+    return proxy_settings
+
+# Setup proxy before importing MVP logic
+setup_proxy()
 
 # Import our existing MVP logic
 from mvp_demo import (
     load_processed_urls, save_processed_url, get_article_urls,
-    get_article_text, analyze_text, display_results
+    get_article_text, analyze_text, display_results,
+    CACHE_FILE, BASE_URL, ARTICLE_LINK_SELECTOR
 )
 
 app = Flask(__name__)
@@ -37,6 +72,7 @@ class LogCapture:
     """Capture print statements and send to web interface"""
     def __init__(self):
         self.logs = []
+        self.original_stdout = sys.stdout  # Save original stdout
     
     def write(self, text):
         if text.strip():
@@ -44,11 +80,115 @@ class LogCapture:
             log_entry = f"[{timestamp}] {text.strip()}"
             self.logs.append(log_entry)
             log_queue.put(log_entry)
-            # Also print to console for debugging
-            print(text, end='')
+            # Print to original console (not captured stdout)
+            self.original_stdout.write(f"{log_entry}\n")
+            self.original_stdout.flush()
     
     def flush(self):
         pass
+
+def parse_analysis_result(analysis_text, url):
+    """Parse the raw Gemini analysis text into structured data for the template"""
+    
+    result = {
+        'url': url,
+        'timestamp': datetime.now().isoformat(),
+        'analysis': analysis_text,
+        'title': 'Feature Analysis',
+        'summary': '',
+        'is_new_feature': False,
+        'category': 'Unknown',
+        'source': 'grab',
+        'key_features': [],
+        'relevance_score': 0
+    }
+    
+    try:
+        lines = analysis_text.split('\n')
+        
+        # Extract key information from the analysis
+        for line in lines:
+            line = line.strip()
+            
+            # Extract feature name/title
+            if 'feature/product name:' in line.lower():
+                title = line.split(':', 1)[1].strip()
+                if title and title != '[Name if applicable]':
+                    result['title'] = title
+            
+            # Extract category
+            elif 'category:' in line.lower():
+                category = line.split(':', 1)[1].strip()
+                if category and not category.startswith('['):
+                    result['category'] = category
+            
+            # Check if it's a new feature
+            elif 'is this announcing a new feature' in line.lower():
+                result['is_new_feature'] = 'yes' in line.lower()
+            
+            # Extract relevance score
+            elif 'relevance score:' in line.lower():
+                try:
+                    score_text = line.split(':', 1)[1].strip()
+                    # Extract numeric part
+                    score_match = re.search(r'(\d+)', score_text)
+                    if score_match:
+                        result['relevance_score'] = int(score_match.group(1))
+                except:
+                    pass
+        
+        # Extract summary from SUMMARY section
+        summary_start = analysis_text.find('**SUMMARY:**')
+        if summary_start != -1:
+            summary_section = analysis_text[summary_start:]
+            summary_end = summary_section.find('**COMPETITIVE INTELLIGENCE:**')
+            if summary_end != -1:
+                summary_text = summary_section[len('**SUMMARY:**'):summary_end].strip()
+                result['summary'] = summary_text
+            else:
+                # If no competitive intelligence section, take until next ** section
+                lines_after_summary = summary_section.split('\n')[1:]  # Skip the SUMMARY line
+                summary_lines = []
+                for line in lines_after_summary:
+                    if line.strip().startswith('**') and line.strip().endswith('**'):
+                        break
+                    summary_lines.append(line)
+                result['summary'] = '\n'.join(summary_lines).strip()
+        
+        # If no summary found, create one from the analysis
+        if not result['summary']:
+            # Take first few lines that aren't headers
+            content_lines = []
+            for line in lines:
+                if line.strip() and not line.strip().startswith('**') and not line.strip().startswith('-'):
+                    content_lines.append(line.strip())
+                    if len(' '.join(content_lines)) > 200:
+                        break
+            result['summary'] = ' '.join(content_lines)[:300]
+        
+        # Extract key features (simple heuristic)
+        if result['is_new_feature']:
+            # Look for bullet points or key feature mentions
+            feature_keywords = ['feature', 'functionality', 'service', 'capability', 'option']
+            for line in lines:
+                line_lower = line.lower()
+                if any(keyword in line_lower for keyword in feature_keywords) and len(line.strip()) > 10:
+                    result['key_features'].append(line.strip()[:100])
+                    if len(result['key_features']) >= 3:
+                        break
+        
+        # Determine source from URL
+        if 'grab.com' in url:
+            result['source'] = 'grab'
+        elif 'foodpanda' in url:
+            result['source'] = 'foodpanda'
+        elif 'deliveroo' in url:
+            result['source'] = 'deliveroo'
+        
+    except Exception as e:
+        print(f"  ⚠️  Error parsing analysis: {e}")
+    
+    return result
 
 def run_analysis_task():
     """Background task to run the ACFWS analysis"""
@@ -57,31 +197,31 @@ def run_analysis_task():
     try:
         app_state['status'] = 'running'
         app_state['start_time'] = datetime.now()
-        app_state['current_task'] = '初始化分析任务...'
+        app_state['current_task'] = 'Initializing analysis task...'
         
         # Capture stdout to get script output
         log_capture = LogCapture()
         
         with redirect_stdout(log_capture):
-            print("🚀 开始分析竞品功能...")
+            print("🚀 Starting competitor feature analysis...")
             
             # Load processed URLs
-            print("📂 加载已处理的文章缓存...")
-            processed_urls = load_processed_urls()
-            app_state['current_task'] = '加载缓存完成'
+            print("📂 Loading processed article cache...")
+            processed_urls = load_processed_urls(CACHE_FILE)
+            app_state['current_task'] = 'Cache loaded'
             
             # Get article URLs
-            print("🔍 获取文章URL列表...")
-            all_urls = get_article_urls()
+            print("🔍 Getting article URL list...")
+            all_urls = get_article_urls(BASE_URL, ARTICLE_LINK_SELECTOR)
             app_state['total_articles'] = len(all_urls)
-            app_state['current_task'] = f'发现 {len(all_urls)} 篇文章'
+            app_state['current_task'] = f'Found {len(all_urls)} articles'
             
             # Filter new URLs
             new_urls = [url for url in all_urls if url not in processed_urls]
-            print(f"📊 发现 {len(new_urls)} 篇新文章需要分析")
+            print(f"📊 Found {len(new_urls)} new articles to analyze")
             
             if not new_urls:
-                print("✅ 所有文章都已分析过，无需重复处理")
+                print("✅ All articles already analyzed, no reprocessing needed")
                 app_state['status'] = 'completed'
                 app_state['end_time'] = datetime.now()
                 return
@@ -91,37 +231,33 @@ def run_analysis_task():
             for i, url in enumerate(new_urls):
                 app_state['processed_articles'] = i
                 app_state['progress'] = int((i / len(new_urls)) * 100)
-                app_state['current_task'] = f'分析文章 {i+1}/{len(new_urls)}'
+                app_state['current_task'] = f'Analyzing article {i+1}/{len(new_urls)}'
                 
-                print(f"\n📖 正在处理文章 {i+1}/{len(new_urls)}: {url}")
+                print(f"\n📖 Processing article {i+1}/{len(new_urls)}: {url}")
                 
                 # Get article content
-                print("  🔄 获取文章内容...")
+                print("  🔄 Getting article content...")
                 article_text = get_article_text(url)
                 
                 if article_text and len(article_text.strip()) > 100:
-                    print("  🤖 使用AI分析内容...")
+                    print("  🤖 Using AI to analyze content...")
                     analysis = analyze_text(article_text)
                     
-                    if analysis:
-                        result = {
-                            'url': url,
-                            'analysis': analysis,
-                            'timestamp': datetime.now().isoformat(),
-                            'article_preview': article_text[:200] + "..." if len(article_text) > 200 else article_text
-                        }
-                        results.append(result)
+                    if analysis and not analysis.startswith("ERROR:"):
+                        # Parse the analysis to extract structured data
+                        parsed_result = parse_analysis_result(analysis, url)
+                        results.append(parsed_result)
                         
                         # Display results (this will be captured in logs)
-                        display_results(analysis)
+                        display_results(analysis, url)
                         
                         # Save to cache
-                        save_processed_url(url)
-                        print(f"  ✅ 文章分析完成并保存到缓存")
+                        save_processed_url(CACHE_FILE, url)
+                        print(f"  ✅ Article analysis completed and saved to cache")
                     else:
-                        print(f"  ❌ AI分析失败")
+                        print(f"  ❌ AI analysis failed: {analysis}")
                 else:
-                    print(f"  ⚠️  文章内容获取失败或内容过短")
+                    print(f"  ⚠️  Article content retrieval failed or content too short")
                 
                 time.sleep(0.5)  # Small delay for demo effect
             
@@ -131,24 +267,24 @@ def run_analysis_task():
             app_state['status'] = 'completed'
             app_state['end_time'] = datetime.now()
             
-            print(f"\n🎉 分析完成! 共处理 {len(new_urls)} 篇文章，发现 {len(results)} 个分析结果")
+            print(f"\n🎉 Analysis completed! Processed {len(new_urls)} articles, found {len(results)} analysis results")
             
     except Exception as e:
         app_state['status'] = 'error'
-        app_state['current_task'] = f'错误: {str(e)}'
+        app_state['current_task'] = f'Error: {str(e)}'
         app_state['end_time'] = datetime.now()
-        print(f"❌ 分析过程中出现错误: {str(e)}")
+        print(f"❌ Error during analysis: {str(e)}")
 
 @app.route('/')
 def index():
-    """主页"""
+    """Main page"""
     return render_template('index.html', state=app_state)
 
 @app.route('/start', methods=['POST'])
 def start_analysis():
-    """启动分析任务"""
+    """Start analysis task"""
     if app_state['status'] in ['running']:
-        return jsonify({'error': '分析正在进行中'}), 400
+        return jsonify({'error': 'Analysis is already running'}), 400
     
     # Reset state
     app_state.update({
@@ -172,16 +308,16 @@ def start_analysis():
     thread.daemon = True
     thread.start()
     
-    return jsonify({'message': '分析任务已启动'})
+    return jsonify({'message': 'Analysis task started'})
 
 @app.route('/status')
 def get_status():
-    """获取当前状态"""
+    """Get current status"""
     return jsonify(app_state)
 
 @app.route('/logs')
 def stream_logs():
-    """实时日志流"""
+    """Real-time log stream"""
     def generate():
         while True:
             try:
@@ -201,12 +337,12 @@ def stream_logs():
 
 @app.route('/monitor')
 def monitor():
-    """监控页面"""
+    """Monitor page"""
     return render_template('monitor.html', state=app_state)
 
 @app.route('/results')
 def results():
-    """结果页面"""
+    """Results page"""
     return render_template('results.html', state=app_state)
 
 if __name__ == '__main__':
@@ -226,14 +362,14 @@ if __name__ == '__main__':
     
     port = find_free_port()
     if port is None:
-        print("❌ 无法找到可用端口")
+        print("❌ Unable to find available port")
         exit(1)
     
-    print("🚀 ACFWS Web演示启动中...")
-    print(f"📱 请在浏览器中访问: http://localhost:{port}")
-    print("⭐ 提示: 使用 Ctrl+C 停止服务")
+    print("🚀 ACFWS Web Demo starting...")
+    print(f"📱 Please visit in browser: http://localhost:{port}")
+    print("⭐ Tip: Use Ctrl+C to stop service")
     
     try:
         app.run(debug=True, host='0.0.0.0', port=port)
     except KeyboardInterrupt:
-        print("\n👋 服务已停止") 
+        print("\n👋 Service stopped") 

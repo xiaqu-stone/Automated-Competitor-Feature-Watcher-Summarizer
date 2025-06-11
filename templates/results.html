@@ -1,183 +1,207 @@
 {% extends "base.html" %}
 
-{% block title %}分析结果 - ACFWS{% endblock %}
+{% block title %}Results - ACFWS{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-4">
+    <!-- Header -->
     <div class="row">
         <div class="col-12">
-            <h2><i class="bi bi-file-text"></i> 竞品功能分析结果</h2>
-            <p class="text-muted">AI分析发现的竞品最新功能和重要更新</p>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-list-ul"></i> Analysis Results
+                </h2>
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="bi bi-house"></i> Back to Home
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- Summary Stats -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-center bg-primary text-white">
+        <div class="col-md-3">
+            <div class="card text-center">
                 <div class="card-body">
-                    <h5 class="card-title">总分析数</h5>
-                    <h3>{{ state.results|length }}</h3>
-                    <small>篇文章已分析</small>
+                    <h3 class="text-primary">{{ state.results|length }}</h3>
+                    <h6>Total Features</h6>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <div class="card text-center bg-success text-white">
+        <div class="col-md-3">
+            <div class="card text-center">
                 <div class="card-body">
-                    <h5 class="card-title">新功能发现</h5>
-                    <h3>
-                        {% set new_features = state.results|selectattr('analysis', 'containing', '🚀')|list %}
-                        {{ new_features|length }}
-                    </h3>
-                    <small>个新功能识别</small>
+                    <h3 class="text-success">{{ state.results|selectattr('is_new_feature')|list|length or 0 }}</h3>
+                    <h6>New Features</h6>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <div class="card text-center bg-info text-white">
+        <div class="col-md-3">
+            <div class="card text-center">
                 <div class="card-body">
-                    <h5 class="card-title">最后更新</h5>
-                    <h3>
-                        {% if state.end_time %}
-                            {{ state.end_time[:16] }}
+                    <h3 class="text-info">{{ state.processed_articles or 0 }}</h3>
+                    <h6>Articles Analyzed</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">
+                        {% if state.end_time and state.start_time %}
+                            {{ ((state.end_time - state.start_time).total_seconds() / 60)|round(1) }}m
                         {% else %}
                             --
                         {% endif %}
                     </h3>
-                    <small>分析完成时间</small>
+                    <h6>Analysis Time</h6>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filter and Controls -->
+    <!-- Filters -->
     <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="btn-group" role="group">
-                <input type="radio" class="btn-check" name="filter" id="filter-all" autocomplete="off" checked>
-                <label class="btn btn-outline-primary" for="filter-all">
-                    <i class="bi bi-list"></i> 全部 ({{ state.results|length }})
-                </label>
-
-                <input type="radio" class="btn-check" name="filter" id="filter-new" autocomplete="off">
-                <label class="btn btn-outline-success" for="filter-new">
-                    <i class="bi bi-star"></i> 新功能 
-                    ({% set new_features = state.results|selectattr('analysis', 'containing', '🚀')|list %}{{ new_features|length }})
-                </label>
-
-                <input type="radio" class="btn-check" name="filter" id="filter-recent" autocomplete="off">
-                <label class="btn btn-outline-info" for="filter-recent">
-                    <i class="bi bi-clock"></i> 最新
-                </label>
-            </div>
-        </div>
-        
-        <div class="col-md-4 text-end">
-            <a href="/monitor" class="btn btn-primary">
-                <i class="bi bi-display"></i> 返回监控
-            </a>
-            <a href="/" class="btn btn-outline-secondary">
-                <i class="bi bi-house"></i> 首页
-            </a>
-        </div>
-    </div>
-
-    <!-- Results Display -->
-    {% if state.results %}
-    <div class="row" id="results-container">
-        {% for result in state.results %}
-        <div class="col-12 mb-4 result-item" 
-             data-type="{% if '🚀' in result.analysis %}new{% else %}regular{% endif %}"
-             data-timestamp="{{ result.timestamp }}">
-            <div class="card feature-card {% if '🚀' in result.analysis %}feature-new{% elif '⚠️' in result.analysis %}feature-important{% endif %}">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        {% if '🚀' in result.analysis %}
-                        <span class="badge bg-success me-2">
-                            <i class="bi bi-star-fill"></i> 新功能发现
-                        </span>
-                        {% elif '⚠️' in result.analysis %}
-                        <span class="badge bg-warning me-2">
-                            <i class="bi bi-exclamation-triangle"></i> 重要更新
-                        </span>
-                        {% else %}
-                        <span class="badge bg-secondary me-2">
-                            <i class="bi bi-info-circle"></i> 常规更新
-                        </span>
-                        {% endif %}
-                        
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> {{ result.timestamp[:16] }}
-                        </small>
-                    </div>
-                    
-                    <div>
-                        <a href="{{ result.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-box-arrow-up-right"></i> 查看原文
-                        </a>
-                    </div>
-                </div>
-                
+        <div class="col-12">
+            <div class="card">
                 <div class="card-body">
-                    <!-- AI Analysis -->
-                    <div class="analysis-content">
-                        <h6><i class="bi bi-robot"></i> AI 分析结果:</h6>
-                        <div class="analysis-text">
-                            {{ result.analysis|replace('\n', '<br>')|safe }}
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="searchFilter" 
+                                       placeholder="Search features...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="sourceFilter">
+                                <option value="">All Sources</option>
+                                <option value="grab">Grab</option>
+                                <option value="foodpanda">FoodPanda</option>
+                                <option value="feedme">Feedme</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="typeFilter">
+                                <option value="">All Types</option>
+                                <option value="new">New Features</option>
+                                <option value="important">Important Updates</option>
+                            </select>
                         </div>
                     </div>
-                    
-                    <!-- Article Preview -->
-                    <div class="mt-3">
-                        <button class="btn btn-sm btn-outline-info" type="button" 
-                                data-bs-toggle="collapse" 
-                                data-bs-target="#preview-{{ loop.index }}" 
-                                aria-expanded="false">
-                            <i class="bi bi-eye"></i> 查看文章预览
-                        </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="row" id="resultsContainer">
+        {% if state.results %}
+            {% for result in state.results %}
+            <div class="col-md-6 mb-4 result-item" 
+                 data-source="{{ result.source or 'unknown' }}" 
+                 data-type="{{ 'new' if result.is_new_feature else 'update' }}">
+                <div class="card feature-card h-100 {% if result.is_new_feature %}feature-new{% endif %}">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-0">
+                                {% if result.is_new_feature %}
+                                    <span class="badge bg-success me-2">🚀 New Feature</span>
+                                {% else %}
+                                    <span class="badge bg-info me-2">📰 Update</span>
+                                {% endif %}
+                                {{ result.title[:50] }}{% if result.title|length > 50 %}...{% endif %}
+                            </h6>
+                            <small class="text-muted">
+                                {{ result.timestamp[:16] if result.timestamp else 'Unknown' }}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            {{ result.summary[:200] }}{% if result.summary|length > 200 %}...{% endif %}
+                        </p>
                         
-                        <div class="collapse mt-2" id="preview-{{ loop.index }}">
-                            <div class="card card-body bg-light">
-                                <small class="text-muted">
-                                    <strong>文章内容预览:</strong><br>
-                                    {{ result.article_preview }}
-                                </small>
+                        {% if result.key_features %}
+                        <div class="mb-3">
+                            <h6>Key Features:</h6>
+                            <ul class="list-unstyled">
+                                {% for feature in result.key_features[:3] %}
+                                <li><i class="bi bi-check-circle text-success"></i> {{ feature }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.category %}
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">{{ result.category }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                Source: {{ result.source or 'Unknown' }}
+                            </small>
+                            <div>
+                                <a href="{{ result.url }}" target="_blank" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-link-45deg"></i> View Original
+                                </a>
+                                {% if result.analysis_url %}
+                                <a href="{{ result.analysis_url }}" target="_blank" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-file-text"></i> Analysis
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <!-- Empty State -->
-    <div class="row">
-        <div class="col-12">
-            <div class="text-center py-5">
-                <i class="bi bi-inbox display-1 text-muted"></i>
-                <h4 class="mt-3">暂无分析结果</h4>
-                <p class="text-muted mb-4">
-                    还没有运行竞品功能分析，点击下方按钮开始分析
-                </p>
-                <a href="/monitor" class="btn btn-primary btn-lg">
-                    <i class="bi bi-play-fill"></i> 开始分析
-                </a>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <h4 class="mt-3">No Results Yet</h4>
+                        <p class="text-muted">
+                            No analysis results available. Start an analysis to see competitor features here.
+                        </p>
+                        <a href="/" class="btn btn-primary">
+                            <i class="bi bi-play-circle"></i> Start Analysis
+                        </a>
+                    </div>
+                </div>
             </div>
-        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
-    <!-- Load More Button (for future pagination) -->
-    {% if state.results and state.results|length >= 10 %}
-    <div class="row">
-        <div class="col-12 text-center">
-            <button class="btn btn-outline-primary" disabled>
-                <i class="bi bi-arrow-down"></i> 加载更多结果 (开发中)
-            </button>
+    <!-- Pagination (if needed) -->
+    {% if state.results|length > 10 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Results pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item">
+                        <a class="page-link" href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
     {% endif %}
@@ -186,136 +210,50 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const filterButtons = document.querySelectorAll('input[name="filter"]');
+// Filter functionality
+function filterResults() {
+    const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    
     const resultItems = document.querySelectorAll('.result-item');
     
-    filterButtons.forEach(button => {
-        button.addEventListener('change', function() {
-            const filterType = this.id.replace('filter-', '');
-            
-            resultItems.forEach(item => {
-                const itemType = item.getAttribute('data-type');
-                const timestamp = new Date(item.getAttribute('data-timestamp'));
-                const now = new Date();
-                const hoursDiff = (now - timestamp) / (1000 * 60 * 60);
-                
-                let show = false;
-                
-                switch(filterType) {
-                    case 'all':
-                        show = true;
-                        break;
-                    case 'new':
-                        show = itemType === 'new';
-                        break;
-                    case 'recent':
-                        show = hoursDiff <= 24; // Last 24 hours
-                        break;
-                }
-                
-                if (show) {
-                    item.style.display = 'block';
-                    // Add fade-in animation
-                    item.style.animation = 'fadeIn 0.3s ease-in';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-            
-            // Update empty state
-            const visibleItems = Array.from(resultItems).filter(item => 
-                item.style.display !== 'none'
-            );
-            
-            if (visibleItems.length === 0 && resultItems.length > 0) {
-                showEmptyState(filterType);
-            } else {
-                hideEmptyState();
-            }
-        });
-    });
-    
-    function showEmptyState(filterType) {
-        let message = '';
-        switch(filterType) {
-            case 'new':
-                message = '暂未发现新功能';
-                break;
-            case 'recent':
-                message = '最近24小时无新分析结果';
-                break;
-            default:
-                message = '暂无分析结果';
+    resultItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        const source = item.dataset.source;
+        const type = item.dataset.type;
+        
+        let show = true;
+        
+        // Search filter
+        if (searchTerm && !text.includes(searchTerm)) {
+            show = false;
         }
         
-        const container = document.getElementById('results-container');
-        container.innerHTML = `
-            <div class="col-12">
-                <div class="text-center py-5">
-                    <i class="bi bi-search display-1 text-muted"></i>
-                    <h4 class="mt-3">${message}</h4>
-                    <p class="text-muted">
-                        尝试选择其他筛选条件查看结果
-                    </p>
-                </div>
-            </div>
-        `;
-    }
-    
-    function hideEmptyState() {
-        // This would restore original content, but for simplicity we'll just refresh
-        // In a real app, we'd store the original content
-    }
-    
-    // Add smooth scroll to top when filter changes
-    filterButtons.forEach(button => {
-        button.addEventListener('change', function() {
-            setTimeout(() => {
-                window.scrollTo({
-                    top: document.getElementById('results-container').offsetTop - 100,
-                    behavior: 'smooth'
-                });
-            }, 100);
-        });
+        // Source filter
+        if (sourceFilter && source !== sourceFilter) {
+            show = false;
+        }
+        
+        // Type filter
+        if (typeFilter && type !== typeFilter) {
+            show = false;
+        }
+        
+        item.style.display = show ? 'block' : 'none';
     });
-    
-    // Highlight new features with animation
-    const newFeatureCards = document.querySelectorAll('.feature-new');
-    newFeatureCards.forEach((card, index) => {
-        setTimeout(() => {
-            card.style.animation = 'pulse 1s ease-in-out infinite;';
-        }, index * 200);
-    });
-});
+}
 
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-    }
-    
-    .analysis-text {
-        line-height: 1.6;
-        white-space: pre-line;
-    }
-    
-    .feature-new {
-        animation: pulse 2s ease-in-out infinite;
-    }
-    
-    .feature-new:hover {
-        animation: none;
-        transform: scale(1.02);
-    }
-`;
-document.head.appendChild(style);
+// Event listeners
+document.getElementById('searchFilter').addEventListener('input', filterResults);
+document.getElementById('sourceFilter').addEventListener('change', filterResults);
+document.getElementById('typeFilter').addEventListener('change', filterResults);
+
+// Auto-refresh if analysis is still running
+if ('{{ state.status }}' === 'running') {
+    setInterval(function() {
+        location.reload();
+    }, 10000); // Refresh every 10 seconds
+}
 </script>
 {% endblock %} 
