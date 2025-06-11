@@ -5,4 +5,5 @@ python-dotenv
 protobuf
 grpcio
 selenium
-webdriver-manager 
+webdriver-manager
+flask 

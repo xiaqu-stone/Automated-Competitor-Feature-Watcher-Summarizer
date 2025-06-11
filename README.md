@@ -1,6 +1,6 @@
-# ACFWS - Automated Competitor Feature Watcher & Summarizer (MVP)
+# ACFWS - Automated Competitor Feature Watcher & Summarizer
 
-A 6-hour MVP that monitors competitor announcements and uses Google Gemini to identify new feature releases.
+A competitive intelligence system that monitors competitor announcements and uses Google Gemini to identify new feature releases. Now with Web interface for easy team collaboration!
 
 ## Quick Start
 
@@ -17,7 +17,15 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 Get your API key from: https://makersuite.google.com/app/apikey
 
-### 3. Run the Script
+### 3. Choose Your Interface
+
+#### Option A: Web Interface (Recommended)
+```bash
+python web_app.py
+```
+Then open your browser to `http://localhost:5000`
+
+#### Option B: Command Line
 ```bash
 uv run python mvp_demo.py
 ```
@@ -36,12 +44,30 @@ uv run python mvp_demo.py
 - 🚀 **Special alerts** for detected new feature announcements
 - Error handling for network issues and API failures
 
+## Features
+
+### 🌐 Web Interface
+- **Real-time monitoring** - Watch script execution live
+- **Beautiful dashboard** - Status, progress, and quick stats
+- **Results visualization** - Card-based layout with filtering
+- **Team collaboration** - Share results easily via web browser
+
+### 🤖 AI Analysis
+- **Gemini-powered** intelligent feature detection
+- **Structured output** with competitive insights
+- **Special alerts** for new feature announcements (🚀)
+- **Context-aware** analysis of competitor updates
+
 ## Files
 
-- `mvp_demo.py` - Main script
+- `web_app.py` - Flask web application
+- `mvp_demo.py` - Core analysis script
+- `templates/` - Web interface templates
+- `static/` - CSS and static assets
 - `grab_articles.txt` - Cache of processed URLs
 - `requirements.txt` - Python dependencies
 - `.env` - API keys (create this yourself)
+- `ENV_SETUP.md` - Environment setup guide
 
 ## MVP Limitations
 

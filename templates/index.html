@@ -1,1 +1,188 @@
- 
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 mb-4">
+            <i class="bi bi-robot"></i> ACFWS 竞品功能监控
+        </h1>
+        <p class="lead mb-4">
+            AI驱动的自动化竞品功能发现与分析系统
+        </p>
+        <p class="mb-0">
+            实时监控 Grab、FoodPanda、Feedme 等竞品的最新功能发布
+        </p>
+    </div>
+</section>
+
+<!-- Dashboard Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Status Card -->
+            <div class="col-md-6 mb-4">
+                <div class="card card-dashboard h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">
+                            <i class="bi bi-activity"></i> 系统状态
+                        </h5>
+                        <div class="mb-3">
+                            <span id="status-display" class="badge badge-lg status-{{ state.status }}">
+                                {% if state.status == 'ready' %}
+                                    <i class="bi bi-check-circle"></i> 准备就绪
+                                {% elif state.status == 'running' %}
+                                    <i class="bi bi-arrow-repeat spin"></i> 分析中
+                                {% elif state.status == 'completed' %}
+                                    <i class="bi bi-check-circle-fill"></i> 已完成
+                                {% elif state.status == 'error' %}
+                                    <i class="bi bi-x-circle"></i> 错误
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- Progress Bar (shown when running) -->
+                        <div id="progress-container" style="{% if state.status != 'running' %}display: none;{% endif %}">
+                            <div class="progress mb-2">
+                                <div id="progress-bar" class="progress-bar" 
+                                     style="width: {{ (state.processed_articles / state.total_articles * 100) if state.total_articles > 0 else 0 }}%">
+                                    {{ state.processed_articles }}/{{ state.total_articles }}
+                                </div>
+                            </div>
+                            <small id="current-task" class="text-muted">{{ state.current_task }}</small>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="mt-3">
+                            {% if state.status == 'ready' or state.status == 'completed' or state.status == 'error' %}
+                                <button id="start-analysis" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-play-fill"></i> 开始分析
+                                </button>
+                            {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="bi bi-hourglass-split"></i> 分析中...
+                                </button>
+                                <a href="/monitor" class="btn btn-info btn-sm ms-2">
+                                    <i class="bi bi-display"></i> 查看实时监控
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats Card -->
+            <div class="col-md-6 mb-4">
+                <div class="card card-dashboard h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-graph-up"></i> 快速统计
+                        </h5>
+                        
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <h3 class="text-primary">{{ state.results|length }}</h3>
+                                    <small class="text-muted">已分析文章</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <h3 class="text-success">
+                                        {{ state.results|selectattr('is_new_feature')|list|length }}
+                                    </h3>
+                                    <small class="text-muted">新功能发现</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if state.start_time %}
+                        <div class="mt-3 text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> 
+                                最后运行: {{ state.start_time.strftime('%Y-%m-%d %H:%M') if state.start_time else '未运行' }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Results Preview -->
+        {% if state.results %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> 最新发现
+                        </h5>
+                        <a href="/results" class="btn btn-outline-primary btn-sm">
+                            查看全部结果 <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for result in state.results[-3:] %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card feature-card {% if result.is_new_feature %}feature-new{% endif %} h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            {% if result.is_new_feature %}
+                                                <span class="badge bg-warning text-dark me-2">🚀 新功能</span>
+                                            {% endif %}
+                                            {{ result.title[:50] }}...
+                                        </h6>
+                                        <p class="card-text text-muted small">
+                                            {{ result.summary[:100] }}...
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="bi bi-link-45deg"></i> 
+                                            <a href="{{ result.url }}" target="_blank">查看原文</a>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+// Auto-refresh status every 5 seconds when analysis is running
+if ('{{ state.status }}' === 'running') {
+    setInterval(function() {
+        location.reload();
+    }, 5000);
+}
+
+// Start analysis button handler
+document.getElementById('start-analysis')?.addEventListener('click', function() {
+    this.disabled = true;
+    this.innerHTML = '<i class="bi bi-hourglass-split"></i> 启动中...';
+    
+    fetch('/start_analysis', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/monitor';
+        } else {
+            alert('启动失败: ' + data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('网络错误: ' + error);
+        location.reload();
+    });
+});
+</script>
+{% endblock %} 
