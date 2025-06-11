@@ -345,6 +345,14 @@ def run_analysis_task():
                 print("  🔄 Getting article content...")
                 article_text = get_article_text(url)
                 
+                # Try mock content if real content failed (for demo purposes)
+                if not article_text or len(article_text.strip()) < 100:
+                    selected_competitor = app_state['selected_competitor']
+                    mock_text = get_mock_content(selected_competitor, url)
+                    if mock_text:
+                        print(f"  📝 Using mock content for demo purposes")
+                        article_text = mock_text
+                
                 if article_text and len(article_text.strip()) > 100:
                     print("  🤖 Using AI to analyze content...")
                     analysis = analyze_text(article_text)
@@ -358,12 +366,13 @@ def run_analysis_task():
                         display_results(analysis, url)
                         
                         # Save to cache
-                        save_processed_url(CACHE_FILE, url)
+                        competitor_config = COMPETITORS[app_state['selected_competitor']]
+                        save_processed_url(competitor_config['cache_file'], url)
                         print(f"  ✅ Article analysis completed and saved to cache")
                     else:
                         print(f"  ❌ AI analysis failed: {analysis}")
                 else:
-                    print(f"  ⚠️  Article content retrieval failed or content too short")
+                    print(f"  ⚠️  No content available for analysis")
                 
                 # Update progress after processing each article
                 app_state['processed_articles'] = i + 1  # Show completed articles (1-based)
@@ -629,6 +638,93 @@ def get_demo_article_urls():
     urls = [article['url'] for article in demo_articles]
     print(f"Found {len(urls)} article links (from mock data).")
     return urls, demo_articles
+
+# Mock content for demo purposes when URLs fail
+MOCK_CONTENT = {
+    'foodme': {
+        'https://www.foodme.asia/news/foodme-launches-ai-powered-restaurant-recommendations/': {
+            'title': 'FoodMe Launches AI-Powered Restaurant Recommendations',
+            'content': '''FoodMe today announced the launch of its revolutionary AI-powered restaurant recommendation system, designed to personalize dining experiences for users across Southeast Asia. 
+
+The new feature leverages machine learning algorithms to analyze user preferences, dietary restrictions, past orders, and real-time data to suggest restaurants and dishes tailored to individual tastes.
+
+Key features include:
+- Smart dietary filtering for vegetarian, vegan, and allergen-free options
+- Mood-based recommendations (comfort food, healthy options, celebration dining)
+- Integration with local weather data to suggest appropriate cuisine
+- Social dining suggestions for group orders
+- Real-time availability and delivery time optimization
+
+"This AI recommendation engine represents a significant leap forward in food delivery personalization," said CEO Jane Smith. "We're not just delivering food; we're delivering experiences that match each customer's unique preferences and lifestyle."
+
+The feature will roll out gradually across all FoodMe markets, starting with Singapore and Malaysia in Q1 2025.'''
+        },
+        'https://www.foodme.asia/news/foodme-introduces-premium-membership-program/': {
+            'title': 'FoodMe Introduces Premium Membership Program',
+            'content': '''FoodMe has launched FoodMe Premium, a comprehensive membership program offering exclusive benefits and enhanced services for frequent users.
+
+Premium members will enjoy:
+- Zero delivery fees on all orders above $15
+- Priority customer support with dedicated hotline
+- Early access to new restaurant partnerships
+- Exclusive discounts from premium restaurant partners
+- Free monthly premium ingredients delivery box
+- Advanced order scheduling up to 7 days in advance
+
+The membership is priced at $9.99 per month with a special launch price of $5.99 for the first three months. Members can cancel anytime with no long-term commitments.
+
+"FoodMe Premium is designed for our most loyal customers who value convenience and quality," said Product Manager Alex Wong. "We want to reward their loyalty while providing services that truly enhance their food delivery experience."
+
+Beta testing showed 87% customer satisfaction rates, with average savings of $25 per month for active users.'''
+        },
+        'https://www.foodme.asia/news/foodme-expands-to-5-new-cities-in-southeast-asia/': {
+            'title': 'FoodMe Expands to 5 New Cities in Southeast Asia',
+            'content': '''FoodMe announced its ambitious expansion plan to enter five new major cities across Southeast Asia by the end of 2025, marking the company's largest geographic expansion to date.
+
+The new markets include:
+- Jakarta, Indonesia - Q2 2025
+- Bangkok, Thailand - Q2 2025  
+- Ho Chi Minh City, Vietnam - Q3 2025
+- Manila, Philippines - Q4 2025
+- Yangon, Myanmar - Q4 2025
+
+Each market will launch with over 500 restaurant partners and dedicated local teams. FoodMe plans to invest $50 million in market entry, logistics infrastructure, and local partnerships.
+
+"Southeast Asia represents an incredible opportunity for food delivery innovation," said Regional Director Maria Santos. "Each city has unique culinary traditions, and we're committed to supporting local restaurants while bringing our technology advantages to new customers."
+
+The expansion will create approximately 1,200 new jobs across the region, including delivery partners, customer service representatives, and local management teams.
+
+FoodMe currently operates in Singapore, Kuala Lumpur, and Penang, serving over 2 million active users.'''
+        },
+        'https://www.foodme.asia/news/foodme-partners-with-local-farmers-for-sustainable-dining/': {
+            'title': 'FoodMe Partners with Local Farmers for Sustainable Dining',
+            'content': '''FoodMe announced a groundbreaking partnership program with local farmers across Southeast Asia to promote sustainable dining and support agricultural communities.
+
+The "Farm to App" initiative connects restaurants on the FoodMe platform directly with certified organic and sustainable farms, creating a transparent supply chain that benefits both farmers and consumers.
+
+Program highlights:
+- Direct farmer partnerships eliminating middleman costs
+- Seasonal menu features highlighting local produce
+- Carbon footprint tracking for farm-to-table deliveries
+- Premium pricing tier for sustainably-sourced meals
+- Educational content about ingredient origins and farming practices
+- Monthly farmer spotlights in the app
+
+"Sustainability isn't just about the environment; it's about creating economic opportunities for farming communities," said Sustainability Director Dr. Rachel Tan. "This program ensures fair prices for farmers while giving consumers access to the freshest, most responsibly-sourced ingredients."
+
+The pilot program launches with 50 farms and 200 restaurants across Malaysia and Singapore, with plans to expand regionally based on initial success metrics.
+
+Initial data shows 23% higher customer satisfaction for sustainably-sourced meals and 15% premium pricing acceptance among environmentally-conscious consumers.'''
+        }
+    }
+}
+
+def get_mock_content(competitor, url):
+    """Get mock content for demo purposes"""
+    if competitor in MOCK_CONTENT and url in MOCK_CONTENT[competitor]:
+        mock_data = MOCK_CONTENT[competitor][url]
+        return f"# {mock_data['title']}\n\n{mock_data['content']}"
+    return None
 
 if __name__ == '__main__':
     import socket
