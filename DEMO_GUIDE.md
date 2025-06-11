@@ -16,13 +16,20 @@ python web_app.py
 
 ## 🏢 支持的竞争对手
 
-### Grab (实时数据)
-- **数据源:** https://www.grab.com/sg/press/
-- **特性:** 实时网页抓取 + 演示数据后备
+### 1. 🟢 Grab (实时抓取)
+- **数据源:** Grab官方新闻页面
+- **抓取方式:** 实时动态获取
+- **覆盖内容:** 最新产品发布、业务动态、投资消息
 - **文章数量:** 8+ 篇最新文章
 - **更新频率:** 实时
 
-### FeedMe (演示数据)
+### 2. 🟢 Square POS (实时抓取) ⭐ 新增
+- **数据源:** Square官方新闻页面 (https://squareup.com/us/en/press)
+- **抓取方式:** 实时动态获取
+- **覆盖内容:** 产品发布、技术创新、合作伙伴关系、财务报告
+- **数据量:** 70+ 实时新闻文章
+
+### 3. 🟡 FeedMe (演示数据)
 - **数据源:** 演示文章缓存
 - **特性:** 完整的模拟内容系统
 - **文章数量:** 4 篇特色文章
@@ -32,8 +39,8 @@ python web_app.py
 
 ### Step 1: 选择竞争对手
 1. 访问主页 http://localhost:8080
-2. 在"Competitor Selection"区域看到两个卡片
-3. 点击选择 **Grab** 或 **FeedMe**
+2. 在"Competitor Selection"区域看到三个卡片
+3. 点击选择 **Grab**, **Square POS** 或 **FeedMe**
 4. 观察卡片高亮和"Selected"标签
 
 ### Step 2: 启动分析
@@ -55,11 +62,19 @@ python web_app.py
 
 ## 🔄 切换竞争对手演示
 
-### Grab → FeedMe 切换
+### Grab → Square POS 切换
 ```bash
 # 在新终端中执行
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"competitor": "foodme"}' \
+     -d '{"competitor": "squarepos"}' \
+     http://localhost:8080/select-competitor
+```
+
+### Square POS → Grab 切换
+```bash
+# 在新终端中执行
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"competitor": "grab"}' \
      http://localhost:8080/select-competitor
 ```
 
@@ -76,19 +91,24 @@ curl -s http://localhost:8080/status | jq '.selected_competitor'
 - 自动排序 (最新优先)
 - 错误处理与后备机制
 
-### 2. AI特性分析
+### 2. 实时网页抓取 (Square POS)
+- 实时抓取Square官方新闻
+- 自动提取新闻标题和内容
+- 自动分类和分析
+
+### 3. AI特性分析
 - Google Gemini AI集成
 - 特性检测与分类
 - 相关性评分 (1-10分)
 - 结构化数据提取
 
-### 3. 实时监控系统
+### 4. 实时监控系统
 - WebSocket-style进度更新
 - 动态运行时计算
 - 状态管理与可视化
 - 响应式界面设计
 
-### 4. 多竞争对手架构
+### 5. 多竞争对手架构
 - 插件化竞争对手配置
 - 运行时切换支持
 - 独立缓存管理
@@ -134,7 +154,7 @@ python -c "import flask, bs4, requests; print('All modules available')"
 ## 📋 演示检查清单
 
 - [ ] ✅ 应用成功启动在端口8080
-- [ ] ✅ 主页显示两个竞争对手选项
+- [ ] ✅ 主页显示三个竞争对手选项
 - [ ] ✅ 点击选择工作，卡片高亮正常
 - [ ] ✅ 启动分析按钮响应
 - [ ] ✅ 监控页面显示实时进度
