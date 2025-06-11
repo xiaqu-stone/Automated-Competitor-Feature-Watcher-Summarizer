@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE / Editor
+.idea/
+.vscode/
+.cursor/
+
+# Project-specific
+processed_urls.txt
+data/
+*.db
+*.db-journal 
