@@ -460,6 +460,57 @@ result = {
 
 **Status:** 🎉 **FULLY IMPLEMENTED** - Square POS successfully integrated as third competitor
 
+### 🔧 UI Filter & Display Issues ✅ RESOLVED
+**Issue Date:** Current session  
+**Problem:** UI inconsistencies in competitor selection and source filtering
+
+**Issues Identified:**
+1. **Missing Square POS in Source Filter:** Analysis Results page的All Sources筛选器中缺少Square POS选项
+2. **Name Inconsistency:** 筛选器中显示"Feedme"但应该显示"FoodMe"
+
+**Root Cause Analysis:**
+1. **Static Filter Options:** `templates/results.html`中的All Sources筛选器选项硬编码，未包含新添加的Square POS
+2. **Naming Mismatch:** 筛选器中的竞争对手名称与COMPETITORS配置不一致
+3. **Legacy Options:** 包含已不使用的"FoodPanda"选项
+
+**Technical Solution:**
+1. **Updated Source Filter Options:**
+   - Removed obsolete "foodpanda" option from filter dropdown
+   - Fixed "feedme" spelling to match COMPETITORS config: "FoodMe"  
+   - Added "square pos" option for Square POS competitor
+   - Ensured filter values match actual source attribution logic
+
+2. **Filter Value Mapping:**
+   ```html
+   <select class="form-select" id="sourceFilter">
+       <option value="">All Sources</option>
+       <option value="grab">Grab</option>
+       <option value="foodme">FoodMe</option>  
+       <option value="square pos">Square POS</option>
+   </select>
+   ```
+
+**COMPETITORS Configuration Validation:**
+- ✅ **grab:** 'Grab' (matches filter option)
+- ✅ **foodme:** 'FoodMe' (matches corrected filter option)  
+- ✅ **square:** 'Square POS' (matches new filter option)
+
+**Source Attribution Logic:**
+- Grab articles → source: "grab"
+- FoodMe articles → source: "foodme" 
+- Square POS articles → source: "square pos"
+
+**Files Modified:**
+- `templates/results.html` - Updated source filter dropdown with correct competitor options
+
+**Verification Results:**
+- ✅ All 3 competitors now appear in Analysis Results source filter
+- ✅ Filter option names match COMPETITORS configuration exactly
+- ✅ Source filtering works correctly for all competitors
+- ✅ No obsolete options remaining in filter dropdown
+
+**Status:** 🎉 **FULLY RESOLVED** - UI筛选器现在包含所有竞争对手且名称完全一致
+
 ---
 
 ## 📊 MVP Development Summary
