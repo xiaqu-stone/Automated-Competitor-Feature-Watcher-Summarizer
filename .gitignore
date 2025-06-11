@@ -17,4 +17,5 @@ venv/
 processed_urls.txt
 data/
 *.db
-*.db-journal 
+*.db-journal
+.env 
