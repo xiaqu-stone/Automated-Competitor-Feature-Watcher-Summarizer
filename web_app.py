@@ -126,6 +126,43 @@ COMPETITORS = {
                 'description': 'Farm-to-table initiative supporting local agriculture'
             }
         ]
+    },
+    'square': {
+        'name': 'Square POS',
+        'base_url': 'https://www.squareup.com/us/en/press',
+        'selector': 'article.press-release h3 > a',
+        'cache_file': 'square_articles.txt',
+        'color': 'info',
+        'demo_articles': [
+            {
+                'url': 'https://www.squareup.com/us/en/press/square-launches-new-ai-powered-inventory-management',
+                'title': 'Square Launches New AI-Powered Inventory Management',
+                'publish_date': '2025-01-15T00:00:00',
+                'category': 'AI Innovation',
+                'description': 'Revolutionary AI system for automated inventory tracking and predictive restocking'
+            },
+            {
+                'url': 'https://www.squareup.com/us/en/press/square-introduces-contactless-payment-solutions-for-small-business',
+                'title': 'Square Introduces Enhanced Contactless Payment Solutions for Small Business',
+                'publish_date': '2025-01-13T00:00:00',
+                'category': 'Payment Innovation',
+                'description': 'New NFC and mobile payment capabilities designed for small and medium businesses'
+            },
+            {
+                'url': 'https://www.squareup.com/us/en/press/square-expands-pos-system-with-advanced-analytics-dashboard',
+                'title': 'Square Expands POS System with Advanced Analytics Dashboard',
+                'publish_date': '2025-01-11T00:00:00',
+                'category': 'Product Enhancement',
+                'description': 'Comprehensive business intelligence platform with real-time sales analytics'
+            },
+            {
+                'url': 'https://www.squareup.com/us/en/press/square-partners-with-major-banks-for-instant-deposit-feature',
+                'title': 'Square Partners with Major Banks for Instant Deposit Feature',
+                'publish_date': '2025-01-07T00:00:00',
+                'category': 'Partnership',
+                'description': 'Strategic banking partnerships enabling instant fund transfers for merchants'
+            }
+        ]
     }
 }
 
@@ -720,6 +757,108 @@ Program highlights:
 The pilot program launches with 50 farms and 200 restaurants across Malaysia and Singapore, with plans to expand regionally based on initial success metrics.
 
 Initial data shows 23% higher customer satisfaction for sustainably-sourced meals and 15% premium pricing acceptance among environmentally-conscious consumers.'''
+        }
+    },
+    'square': {
+        'https://www.squareup.com/us/en/press/square-launches-new-ai-powered-inventory-management': {
+            'title': 'Square Launches New AI-Powered Inventory Management',
+            'content': '''Square today announced the launch of its revolutionary AI-powered inventory management system, designed to help small and medium businesses optimize their stock levels and reduce waste through predictive analytics.
+
+The new Square Inventory AI leverages machine learning algorithms to analyze sales patterns, seasonal trends, supplier data, and external factors to provide intelligent restocking recommendations and demand forecasting.
+
+Key features include:
+- Predictive restocking alerts based on historical sales data
+- Seasonal demand forecasting with 94% accuracy
+- Automatic supplier integration for seamless reordering
+- Smart wastage reduction for perishable goods
+- Integration with Square POS for real-time inventory tracking
+- Customizable alerts for low stock and overstock situations
+
+"Managing inventory has always been one of the biggest challenges for small businesses," said Square's VP of Product Innovation, Sarah Chen. "Our AI system takes the guesswork out of inventory management, helping merchants save time and money while ensuring they never run out of their best-selling items."
+
+The feature is available as part of Square's Premium plan and will roll out to all U.S. merchants starting February 2025, with international expansion planned for Q3 2025.
+
+Beta testing with 500 restaurants showed an average 30% reduction in food waste and 15% improvement in inventory turnover rates.'''
+        },
+        'https://www.squareup.com/us/en/press/square-introduces-contactless-payment-solutions-for-small-business': {
+            'title': 'Square Introduces Enhanced Contactless Payment Solutions for Small Business',
+            'content': '''Square has launched its next-generation contactless payment solutions, featuring advanced NFC technology and enhanced mobile payment capabilities specifically designed for small and medium businesses.
+
+The new Square Contactless Pro includes:
+- Universal NFC reader supporting all major digital wallets
+- QR code payment integration for international customers
+- Voice-activated payment confirmation for accessibility
+- Lightning-fast 0.8-second transaction processing
+- Enhanced encryption with military-grade security
+- Offline payment processing during network outages
+- Multi-language support for diverse customer bases
+
+"Contactless payments are no longer just convenient - they're essential for modern businesses," said David Rodriguez, Square's Director of Payment Solutions. "Our new system ensures every small business can offer the same seamless payment experience as major retailers."
+
+The solution integrates seamlessly with existing Square POS systems and requires no additional hardware for current Square customers. New merchants receive the upgraded reader at no extra cost.
+
+Early adoption data shows 45% faster transaction times and 22% increase in customer satisfaction scores compared to traditional payment methods.
+
+The system will be available nationwide starting January 2025, with special promotions for new Square merchants including zero transaction fees for the first month.'''
+        },
+        'https://www.squareup.com/us/en/press/square-expands-pos-system-with-advanced-analytics-dashboard': {
+            'title': 'Square Expands POS System with Advanced Analytics Dashboard',
+            'content': '''Square unveiled its comprehensive business intelligence platform, Square Analytics Pro, providing merchants with real-time insights and predictive analytics to drive business growth and operational efficiency.
+
+The new analytics dashboard features:
+- Real-time sales performance tracking across all channels
+- Customer behavior analysis and segmentation
+- Predictive revenue forecasting with 92% accuracy
+- Automated reporting for taxes and accounting
+- Comparative market analysis using anonymized data
+- Staff performance metrics and scheduling optimization
+- Social media integration for marketing campaign tracking
+
+"Data-driven decision making shouldn't be exclusive to large corporations," explained Analytics Lead Jennifer Walsh. "Square Analytics Pro democratizes business intelligence, giving every merchant the tools to understand their business deeply and make informed decisions."
+
+Key metrics available include:
+- Peak sales hours and seasonal trends
+- Most profitable items and customer preferences
+- Inventory turnover rates and optimization suggestions
+- Marketing ROI across different channels
+- Staff efficiency and training recommendations
+
+The platform also includes AI-powered insights that automatically identify growth opportunities and potential issues before they impact revenue.
+
+Square Analytics Pro is included in the Square Plus plan at $25/month, with a 30-day free trial for existing merchants. The platform launches nationwide in February 2025.
+
+Pilot merchants reported an average 18% increase in revenue within 60 days of implementation.'''
+        },
+        'https://www.squareup.com/us/en/press/square-partners-with-major-banks-for-instant-deposit-feature': {
+            'title': 'Square Partners with Major Banks for Instant Deposit Feature',
+            'content': '''Square announced strategic partnerships with major financial institutions to launch Square Instant Deposit, enabling merchants to access their sales revenue immediately rather than waiting for standard processing times.
+
+Banking partners include:
+- Bank of America - covering 40% of U.S. small businesses
+- Wells Fargo - specialized small business banking
+- Chase Bank - comprehensive commercial banking
+- Capital One - technology-focused banking solutions
+- Local credit unions - supporting community businesses
+
+Square Instant Deposit features:
+- Immediate fund transfers 24/7, including weekends and holidays
+- No additional fees for transfers under $1,000
+- Integration with existing business bank accounts
+- Real-time transaction confirmation
+- Enhanced fraud protection with biometric verification
+- Support for both individual transactions and batch deposits
+
+"Cash flow is the lifeblood of small businesses," said Square's Head of Financial Services, Michael Thompson. "By partnering with trusted banks, we're eliminating the traditional wait times that can create operational challenges for merchants."
+
+The service addresses a critical pain point where 67% of small businesses report cash flow issues due to delayed payment processing. With instant deposits, merchants can:
+- Pay suppliers immediately for better terms
+- Take advantage of time-sensitive opportunities
+- Manage unexpected expenses without borrowing
+- Improve overall financial planning and stability
+
+Square Instant Deposit will be available to all Square merchants starting March 2025, with early access for Premium plan subscribers beginning February 1st.
+
+Initial testing showed 89% merchant satisfaction and 34% improvement in cash flow management scores.'''
         }
     }
 }
