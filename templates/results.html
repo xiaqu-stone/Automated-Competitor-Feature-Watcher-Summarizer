@@ -115,7 +115,7 @@
                                 {{ result.title[:50] }}{% if result.title|length > 50 %}...{% endif %}
                             </h6>
                             <small class="text-muted">
-                                {{ result.timestamp[:16] if result.timestamp else 'Unknown' }}
+                                {{ result.original_publish_date if result.original_publish_date else (result.timestamp[:16] if result.timestamp else 'Unknown') }}
                             </small>
                         </div>
                     </div>

@@ -172,15 +172,25 @@ class LogCapture:
 def parse_analysis_result(analysis_text, url):
     """Parse the raw Gemini analysis text into structured data for the template"""
     
+    # Get current competitor information
+    current_competitor = app_state.get('selected_competitor', 'grab')
+    competitor_config = COMPETITORS.get(current_competitor, COMPETITORS['grab'])
+    competitor_name = competitor_config['name']
+    
+    # Get article metadata (including original publish date)
+    article_metadata = app_state.get('article_metadata', {}).get(url, {})
+    original_publish_date = article_metadata.get('publish_date', '')
+    
     result = {
         'url': url,
         'timestamp': datetime.now().isoformat(),
+        'original_publish_date': original_publish_date,  # Add original publish date
         'analysis': analysis_text,
-        'title': 'Feature Analysis',
+        'title': article_metadata.get('title', 'Feature Analysis'),  # Use original title if available
         'summary': '',
         'is_new_feature': False,
-        'category': 'Unknown',
-        'source': 'grab',
+        'category': article_metadata.get('category', 'Unknown'),  # Use original category if available
+        'source': competitor_name.lower(),  # Dynamic source based on current competitor
         'key_features': [],
         'relevance_score': 0
     }
@@ -259,13 +269,8 @@ def parse_analysis_result(analysis_text, url):
                     if len(result['key_features']) >= 3:
                         break
         
-        # Determine source from URL
-        if 'grab.com' in url:
-            result['source'] = 'grab'
-        elif 'foodpanda' in url:
-            result['source'] = 'foodpanda'
-        elif 'deliveroo' in url:
-            result['source'] = 'deliveroo'
+        # Note: Source is already dynamically set based on selected competitor above
+        # This section is kept for any additional source-specific logic if needed
         
     except Exception as e:
         print(f"  ⚠️  Error parsing analysis: {e}")

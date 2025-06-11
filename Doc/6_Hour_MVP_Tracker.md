@@ -311,6 +311,86 @@ $ python test_article_parser.py
 
 **Status:** 🎉 **FULLY IMPLEMENTED** - Multi-competitor demo ready with both live and mock data
 
+### 🐛 Analysis Results Page Issues ✅ RESOLVED
+**Issue Date:** Current session  
+**Problem:** Two critical display issues in Analysis Results page:
+
+**Issues Identified:**
+1. **Incorrect Source Attribution:** FoodMe articles incorrectly showing source as "grab" instead of "foodme"
+2. **Wrong Date Display:** Article cards showing analysis timestamp instead of original article publish date
+
+**Root Cause Analysis:**
+1. **Source Issue:** 
+   - Line 182 in `parse_analysis_result()` hardcoded `'source': 'grab'` for all articles
+   - Function didn't consider currently selected competitor when setting source attribution
+   - URL-based source detection logic was incomplete and ran after hardcoded assignment
+
+2. **Date Display Issue:**
+   - Template `results.html` displayed `result.timestamp` (analysis time) instead of original article publish date
+   - Frontend lacked access to original article metadata like publish dates
+   - No mechanism to pass original publish date from backend to frontend
+
+**Solution Implemented:**
+1. **Dynamic Source Attribution:**
+   - Updated `parse_analysis_result()` to read `app_state['selected_competitor']` dynamically
+   - Added competitor configuration lookup to get proper competitor name
+   - Removed hardcoded 'grab' assignment and deprecated URL-based detection logic
+
+2. **Original Publish Date Support:**
+   - Added `original_publish_date` field extraction from `app_state['article_metadata']`
+   - Enhanced result object with both analysis timestamp and original publish date
+   - Updated template to prioritize `original_publish_date` over `timestamp` for display
+
+**Code Changes:**
+```python
+# Dynamic competitor and date handling
+current_competitor = app_state.get('selected_competitor', 'grab')
+competitor_config = COMPETITORS.get(current_competitor, COMPETITORS['grab'])
+competitor_name = competitor_config['name']
+
+article_metadata = app_state.get('article_metadata', {}).get(url, {})
+original_publish_date = article_metadata.get('publish_date', '')
+
+result = {
+    # ... other fields ...
+    'source': competitor_name,  # Dynamic source instead of hardcoded 'grab'
+    'original_publish_date': original_publish_date,  # Original article date
+    # ... other fields ...
+}
+```
+
+**Template Enhancement:**
+```html
+<!-- Prioritize original publish date over analysis timestamp -->
+<small class="text-muted">
+    {{ result.original_publish_date if result.original_publish_date else (result.timestamp[:16] if result.timestamp else 'Unknown') }}
+</small>
+```
+
+**Verification Results:**
+- ✅ **Source Attribution:** FoodMe articles now correctly show source as "FoodMe" instead of "grab"
+- ✅ **Date Display:** Article cards show original publish dates (e.g., "2025-01-14") instead of analysis timestamps
+- ✅ **Backward Compatibility:** Grab articles continue to work with live metadata extraction
+- ✅ **Fallback Handling:** Analysis timestamp shown when original publish date unavailable
+
+**Test Results:**
+```bash
+🧪 Testing FoodMe competitor: ✅ PASS
+   - Source: FoodMe (correct, not 'grab')
+   - Original Date: 2025-01-14 (correct original publish date)
+   - Analysis Time: 2025-01-15T... (separate field)
+
+🧪 Testing Grab competitor: ✅ PASS  
+   - Source: Grab (correct dynamic assignment)
+   - Metadata extraction working with live articles
+```
+
+**Files Modified:**
+- `web_app.py` - Enhanced `parse_analysis_result()` function with dynamic source and date handling
+- `templates/results.html` - Updated date display logic to prioritize original publish dates
+
+**Status:** 🎉 **FULLY RESOLVED** - Analysis Results page now displays correct source attribution and original article publish dates
+
 ---
 
 ## 📊 MVP Development Summary
