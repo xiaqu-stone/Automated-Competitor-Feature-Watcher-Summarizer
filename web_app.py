@@ -91,7 +91,7 @@ COMPETITORS = {
         ]
     },
     'foodme': {
-        'name': 'FoodMe',
+        'name': 'FeedMe',
         'base_url': 'https://www.foodme.asia/news/',
         'selector': 'article.news-item h2 > a',
         'cache_file': 'foodme_articles.txt',
@@ -99,28 +99,28 @@ COMPETITORS = {
         'demo_articles': [
             {
                 'url': 'https://www.foodme.asia/news/foodme-launches-ai-powered-restaurant-recommendations/',
-                'title': 'FoodMe Launches AI-Powered Restaurant Recommendations',
+                'title': 'FeedMe Launches AI-Powered Restaurant Recommendations',
                 'publish_date': '2025-01-14T00:00:00',
                 'category': 'AI Innovation',
                 'description': 'New AI-driven recommendation engine for personalized dining experiences'
             },
             {
                 'url': 'https://www.foodme.asia/news/foodme-introduces-premium-membership-program/',
-                'title': 'FoodMe Introduces Premium Membership Program',
+                'title': 'FeedMe Introduces Premium Membership Program',
                 'publish_date': '2025-01-12T00:00:00',
                 'category': 'Product Launch',
                 'description': 'New subscription service with exclusive restaurant access and benefits'
             },
             {
                 'url': 'https://www.foodme.asia/news/foodme-expands-to-5-new-cities-in-southeast-asia/',
-                'title': 'FoodMe Expands to 5 New Cities in Southeast Asia',
+                'title': 'FeedMe Expands to 5 New Cities in Southeast Asia',
                 'publish_date': '2025-01-09T00:00:00',
                 'category': 'Expansion',
                 'description': 'Market expansion into Thailand, Vietnam, and Philippines'
             },
             {
                 'url': 'https://www.foodme.asia/news/foodme-partners-with-local-farmers-for-sustainable-dining/',
-                'title': 'FoodMe Partners with Local Farmers for Sustainable Dining',
+                'title': 'FeedMe Partners with Local Farmers for Sustainable Dining',
                 'publish_date': '2025-01-06T00:00:00',
                 'category': 'Sustainability',
                 'description': 'Farm-to-table initiative supporting local agriculture'
@@ -227,7 +227,7 @@ def parse_analysis_result(analysis_text, url):
         'summary': '',
         'is_new_feature': False,
         'category': article_metadata.get('category', 'Unknown'),  # Use original category if available
-        'source': competitor_name.lower(),  # Dynamic source based on current competitor
+        'source': competitor_name,  # Dynamic source based on current competitor (maintain proper casing)
         'key_features': [],
         'relevance_score': 0
     }
@@ -685,8 +685,8 @@ def get_demo_article_urls():
 MOCK_CONTENT = {
     'foodme': {
         'https://www.foodme.asia/news/foodme-launches-ai-powered-restaurant-recommendations/': {
-            'title': 'FoodMe Launches AI-Powered Restaurant Recommendations',
-            'content': '''FoodMe today announced the launch of its revolutionary AI-powered restaurant recommendation system, designed to personalize dining experiences for users across Southeast Asia. 
+            'title': 'FeedMe Launches AI-Powered Restaurant Recommendations',
+            'content': '''FeedMe today announced the launch of its revolutionary AI-powered restaurant recommendation system, designed to personalize dining experiences for users across Southeast Asia. 
 
 The new feature leverages machine learning algorithms to analyze user preferences, dietary restrictions, past orders, and real-time data to suggest restaurants and dishes tailored to individual tastes.
 
@@ -699,11 +699,11 @@ Key features include:
 
 "This AI recommendation engine represents a significant leap forward in food delivery personalization," said CEO Jane Smith. "We're not just delivering food; we're delivering experiences that match each customer's unique preferences and lifestyle."
 
-The feature will roll out gradually across all FoodMe markets, starting with Singapore and Malaysia in Q1 2025.'''
+The feature will roll out gradually across all FeedMe markets, starting with Singapore and Malaysia in Q1 2025.'''
         },
         'https://www.foodme.asia/news/foodme-introduces-premium-membership-program/': {
-            'title': 'FoodMe Introduces Premium Membership Program',
-            'content': '''FoodMe has launched FoodMe Premium, a comprehensive membership program offering exclusive benefits and enhanced services for frequent users.
+            'title': 'FeedMe Introduces Premium Membership Program',
+            'content': '''FeedMe has launched FeedMe Premium, a comprehensive membership program offering exclusive benefits and enhanced services for frequent users.
 
 Premium members will enjoy:
 - Zero delivery fees on all orders above $15
@@ -715,13 +715,13 @@ Premium members will enjoy:
 
 The membership is priced at $9.99 per month with a special launch price of $5.99 for the first three months. Members can cancel anytime with no long-term commitments.
 
-"FoodMe Premium is designed for our most loyal customers who value convenience and quality," said Product Manager Alex Wong. "We want to reward their loyalty while providing services that truly enhance their food delivery experience."
+"FeedMe Premium is designed for our most loyal customers who value convenience and quality," said Product Manager Alex Wong. "We want to reward their loyalty while providing services that truly enhance their food delivery experience."
 
 Beta testing showed 87% customer satisfaction rates, with average savings of $25 per month for active users.'''
         },
         'https://www.foodme.asia/news/foodme-expands-to-5-new-cities-in-southeast-asia/': {
-            'title': 'FoodMe Expands to 5 New Cities in Southeast Asia',
-            'content': '''FoodMe announced its ambitious expansion plan to enter five new major cities across Southeast Asia by the end of 2025, marking the company's largest geographic expansion to date.
+            'title': 'FeedMe Expands to 5 New Cities in Southeast Asia',
+            'content': '''FeedMe announced its ambitious expansion plan to enter five new major cities across Southeast Asia by the end of 2025, marking the company's largest geographic expansion to date.
 
 The new markets include:
 - Jakarta, Indonesia - Q2 2025
@@ -730,19 +730,19 @@ The new markets include:
 - Manila, Philippines - Q4 2025
 - Yangon, Myanmar - Q4 2025
 
-Each market will launch with over 500 restaurant partners and dedicated local teams. FoodMe plans to invest $50 million in market entry, logistics infrastructure, and local partnerships.
+Each market will launch with over 500 restaurant partners and dedicated local teams. FeedMe plans to invest $50 million in market entry, logistics infrastructure, and local partnerships.
 
 "Southeast Asia represents an incredible opportunity for food delivery innovation," said Regional Director Maria Santos. "Each city has unique culinary traditions, and we're committed to supporting local restaurants while bringing our technology advantages to new customers."
 
 The expansion will create approximately 1,200 new jobs across the region, including delivery partners, customer service representatives, and local management teams.
 
-FoodMe currently operates in Singapore, Kuala Lumpur, and Penang, serving over 2 million active users.'''
+FeedMe currently operates in Singapore, Kuala Lumpur, and Penang, serving over 2 million active users.'''
         },
         'https://www.foodme.asia/news/foodme-partners-with-local-farmers-for-sustainable-dining/': {
-            'title': 'FoodMe Partners with Local Farmers for Sustainable Dining',
-            'content': '''FoodMe announced a groundbreaking partnership program with local farmers across Southeast Asia to promote sustainable dining and support agricultural communities.
+            'title': 'FeedMe Partners with Local Farmers for Sustainable Dining',
+            'content': '''FeedMe announced a groundbreaking partnership program with local farmers across Southeast Asia to promote sustainable dining and support agricultural communities.
 
-The "Farm to App" initiative connects restaurants on the FoodMe platform directly with certified organic and sustainable farms, creating a transparent supply chain that benefits both farmers and consumers.
+The "Farm to App" initiative connects restaurants on the FeedMe platform directly with certified organic and sustainable farms, creating a transparent supply chain that benefits both farmers and consumers.
 
 Program highlights:
 - Direct farmer partnerships eliminating middleman costs

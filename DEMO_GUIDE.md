@@ -22,7 +22,7 @@ python web_app.py
 - **文章数量:** 8+ 篇最新文章
 - **更新频率:** 实时
 
-### FoodMe (演示数据)
+### FeedMe (演示数据)
 - **数据源:** 演示文章缓存
 - **特性:** 完整的模拟内容系统
 - **文章数量:** 4 篇特色文章
@@ -33,7 +33,7 @@ python web_app.py
 ### Step 1: 选择竞争对手
 1. 访问主页 http://localhost:8080
 2. 在"Competitor Selection"区域看到两个卡片
-3. 点击选择 **Grab** 或 **FoodMe**
+3. 点击选择 **Grab** 或 **FeedMe**
 4. 观察卡片高亮和"Selected"标签
 
 ### Step 2: 启动分析
@@ -55,7 +55,7 @@ python web_app.py
 
 ## 🔄 切换竞争对手演示
 
-### Grab → FoodMe 切换
+### Grab → FeedMe 切换
 ```bash
 # 在新终端中执行
 curl -X POST -H "Content-Type: application/json" \
