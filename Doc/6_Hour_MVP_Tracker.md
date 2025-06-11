@@ -198,6 +198,58 @@ python web_app.py
 
 ### 🆕 Dynamic Article Fetching Implementation ✅ COMPLETED
 **Issue Date:** Current session  
+
+### 🐛 Analysis Results Accumulation Issue ✅ RESOLVED
+**Issue Date:** Current session  
+**Problem:** 在Analysis Results页面中，当分析完多个平台后，结果中只会展示最近分析的那个平台，而用户希望能够展示所有分析过的结果
+
+**Root Cause Analysis:**
+1. **Results being overwritten instead of accumulated**:
+   - In `start_analysis()` function: `'results': []` cleared previous results on every new analysis
+   - In `run_analysis_task()` function: `app_state['results'] = results` overwrote instead of extending existing results
+   - Each competitor analysis replaced all previous results instead of adding to them
+
+2. **No mechanism for cross-competitor result persistence**:
+   - System designed for single-competitor sessions
+   - No accumulation logic for multi-competitor analysis workflows
+   - No user control for managing accumulated results
+
+**Solution Implemented:**
+1. **Modified result storage logic**:
+   - **Fixed `start_analysis()` function**: Removed `'results': []` from state reset; preserved existing results
+   - **Fixed `run_analysis_task()` function**: Changed from `app_state['results'] = results` to `app_state['results'].extend(results)`
+   - **Added result accumulation**: New results now append to existing ones instead of replacing
+
+2. **Enhanced user interface**:
+   - **Added total results count**: Header shows "(X total across all competitors)"
+   - **Added clear results button**: Users can manually clear all accumulated results
+   - **Added clear confirmation**: Safety dialog prevents accidental result deletion
+   - **Enhanced logging**: Shows both new results count and total accumulated count
+
+3. **New API endpoint**:
+   - **Added `/clear-results` POST endpoint**: Allows users to reset accumulated results
+   - **Added JavaScript function**: `clearAllResults()` with confirmation dialog
+   - **Added proper error handling**: Client-side error display for failed operations
+
+**Technical Details:**
+- Results now accumulate across all competitor analyses in the same session
+- Each result retains source attribution (Grab, FeedMe, Square POS) for filtering
+- UI properly handles empty state and large result sets
+- Backend properly initializes results array if it doesn't exist
+- Frontend provides user control for result management
+
+**Verification:**
+- ✅ Multiple competitor analyses accumulate results correctly
+- ✅ Source filtering still works for individual competitor results
+- ✅ Clear button safely removes all accumulated results with confirmation
+- ✅ Result count displays properly in header and statistics
+- ✅ New analyses add to existing results instead of replacing them
+
+**Files Modified:**
+- `web_app.py`: Fixed result storage and accumulation logic, added clear endpoint
+- `templates/results.html`: Added clear button, total count display, and JavaScript functionality
+
+**Status:** 🎉 **FULLY RESOLVED** - 用户现在可以在单个会话中分析多个竞争对手，所有结果都会累积显示，同时提供了清除功能以便重新开始
 **Problem:** Application used hardcoded demo data (4 fixed URLs) instead of dynamic scraping
 
 **Analysis:**

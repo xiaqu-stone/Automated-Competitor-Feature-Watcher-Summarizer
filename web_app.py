@@ -422,13 +422,19 @@ def run_analysis_task():
                 
                 time.sleep(0.5)  # Small delay for demo effect
             
-            app_state['results'] = results
+            # Accumulate results instead of overwriting
+            if 'results' not in app_state:
+                app_state['results'] = []
+            app_state['results'].extend(results)
+            
             app_state['processed_articles'] = len(new_urls)
             app_state['progress'] = 100
             app_state['status'] = 'completed'
             app_state['end_time'] = datetime.now()
             
-            print(f"\n🎉 Analysis completed! Processed {len(new_urls)} articles, found {len(results)} analysis results")
+            total_results = len(app_state['results'])
+            print(f"\n🎉 Analysis completed! Processed {len(new_urls)} articles, found {len(results)} new analysis results")
+            print(f"📊 Total accumulated results across all competitors: {total_results}")
             
     except Exception as e:
         app_state['status'] = 'error'
@@ -462,19 +468,22 @@ def start_analysis():
     if app_state['status'] in ['running']:
         return jsonify({'error': 'Analysis is already running'}), 400
     
-    # Reset state
+    # Reset state (preserve existing results for accumulation)
     app_state.update({
         'status': 'ready',
         'progress': 0,
         'total_articles': 0,
         'processed_articles': 0,
         'current_task': '',
-        'results': [],
         'logs': [],
         'start_time': None,
         'end_time': None,
         'article_metadata': {}  # Clear previous article metadata
     })
+    
+    # Initialize results list if it doesn't exist, but don't clear existing results
+    if 'results' not in app_state:
+        app_state['results'] = []
     
     # Clear log queue
     while not log_queue.empty():
@@ -521,6 +530,12 @@ def monitor():
 def results():
     """Results page"""
     return render_template('results.html', state=app_state)
+
+@app.route('/clear-results', methods=['POST'])
+def clear_results():
+    """Clear all accumulated analysis results"""
+    app_state['results'] = []
+    return jsonify({'message': 'All analysis results cleared successfully'})
 
 def get_article_urls(base_url, selector, limit=10):
     """获取Grab最新文章列表，包含标题、URL、发布日期等信息"""
