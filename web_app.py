@@ -10,6 +10,7 @@ from contextlib import redirect_stdout
 import os
 import requests
 import re
+from bs4 import BeautifulSoup
 
 # Configure proxy settings
 def setup_proxy():
@@ -62,7 +63,8 @@ app_state = {
     'results': [],
     'logs': [],
     'start_time': None,
-    'end_time': None
+    'end_time': None,
+    'article_metadata': {}  # Store article info by URL
 }
 
 # Thread-safe queue for real-time logs
@@ -212,7 +214,19 @@ def run_analysis_task():
             
             # Get article URLs
             print("🔍 Getting article URL list...")
-            all_urls = get_article_urls(BASE_URL, ARTICLE_LINK_SELECTOR)
+            result = get_article_urls(BASE_URL, ARTICLE_LINK_SELECTOR)
+            
+            # Handle both old and new function signatures
+            if isinstance(result, tuple):
+                all_urls, articles = result
+                # Store article metadata
+                for article in articles:
+                    app_state['article_metadata'][article['url']] = article
+            else:
+                # Fallback for old signature
+                all_urls = result
+                articles = []
+            
             app_state['total_articles'] = len(all_urls)
             app_state['current_task'] = f'Found {len(all_urls)} articles'
             
@@ -346,6 +360,165 @@ def monitor():
 def results():
     """Results page"""
     return render_template('results.html', state=app_state)
+
+def get_article_urls(base_url, selector, limit=10):
+    """获取Grab最新文章列表，包含标题、URL、发布日期等信息"""
+    
+    try:
+        print("🔍 Fetching latest articles from Grab...")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(base_url, headers=headers, timeout=15)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # 查找所有文章链接
+        blog_links = soup.find_all('a', class_='blogHyperlink')
+        print(f"Found {len(blog_links)} article links on press page.")
+        
+        articles = []
+        valid_articles = 0
+        
+        for link in blog_links:
+            if valid_articles >= limit:
+                break
+                
+            try:
+                # 获取URL
+                article_url = link.get('href')
+                if not article_url or article_url == '#':
+                    continue
+                    
+                # 获取文章容器
+                article_panel = link.find('article', class_=lambda x: x and 'panel-article' in str(x))
+                if not article_panel:
+                    continue
+                
+                # 获取标题
+                title_elem = article_panel.find('h2')
+                if not title_elem:
+                    title_elem = article_panel.find(['h1', 'h3', 'h4', 'h5'])
+                
+                title = title_elem.get_text(strip=True) if title_elem else "Unknown Title"
+                
+                # 获取发布日期
+                date_elem = article_panel.find(class_='post-date')
+                publish_date = None
+                original_date_text = ""
+                
+                if date_elem:
+                    original_date_text = date_elem.get_text(strip=True)
+                    # 解析日期格式 "11 Jun 2025" 或其他格式
+                    try:
+                        # 尝试多种日期格式
+                        for fmt in ["%d %b %Y", "%B %d, %Y", "%d %B %Y"]:
+                            try:
+                                publish_date = datetime.strptime(original_date_text, fmt)
+                                break
+                            except:
+                                continue
+                        
+                        if not publish_date:
+                            # 如果无法解析，使用当前时间作为默认值
+                            publish_date = datetime.now()
+                    except:
+                        publish_date = datetime.now()
+                else:
+                    publish_date = datetime.now()
+                
+                # 获取分类
+                cat_elem = article_panel.find(class_='post-cat')
+                category = "Others"
+                if cat_elem:
+                    category = cat_elem.get_text(strip=True).replace('**', '').strip()
+                
+                # 获取描述
+                description = ""
+                desc_p = article_panel.find('p')
+                if desc_p:
+                    description = desc_p.get_text(strip=True)
+                
+                article_info = {
+                    'url': article_url,
+                    'title': title,
+                    'publish_date': publish_date,
+                    'original_date_text': original_date_text,
+                    'description': description,
+                    'category': category,
+                    'source': 'grab'
+                }
+                
+                articles.append(article_info)
+                valid_articles += 1
+                print(f"  ✓ {valid_articles:2d}. {title[:50]}... ({original_date_text})")
+                
+            except Exception as e:
+                print(f"  ❌ Error processing article: {e}")
+                continue
+        
+        if articles:
+            # 按发布日期排序（最新的在前）
+            articles.sort(key=lambda x: x['publish_date'], reverse=True)
+            print(f"Successfully fetched {len(articles)} articles, sorted by date (newest first)")
+            return [article['url'] for article in articles], articles
+        else:
+            print("⚠️  No valid articles found, falling back to demo mode")
+            return get_demo_article_urls()
+            
+    except Exception as e:
+        print(f"❌ Failed to fetch latest articles: {e}")
+        print("⚠️  Falling back to demo mode with hardcoded articles")
+        return get_demo_article_urls()
+
+def get_demo_article_urls():
+    """获取演示用的硬编码文章URL列表（备用方案）"""
+    print("Fetching hardcoded article links for demo...")
+    
+    demo_articles = [
+        {
+            'url': 'https://www.grab.com/sg/press/others/grab-prices-upsized-1-5-billion-convertible-notes-offering/',
+            'title': 'Grab Prices Upsized $1.5 Billion Convertible Notes Offering',
+            'publish_date': datetime(2025, 6, 11),
+            'original_date_text': '11 Jun 2025',
+            'category': 'Others',
+            'description': 'Grab today announced the pricing of an upsized offering of $1.5 billion aggregate principal amount of zero coupon convertible senior notes due 2030',
+            'source': 'grab'
+        },
+        {
+            'url': 'https://www.grab.com/sg/press/others/grab-announces-proposed-offering-of-convertible-notes/',
+            'title': 'Grab Announces Proposed Offering of Convertible Notes',
+            'publish_date': datetime(2025, 6, 10),
+            'original_date_text': '10 Jun 2025',
+            'category': 'Others',
+            'description': 'Grab proposes to offer US$1,250,000,000 in aggregate principal amount of convertible senior notes due 2030',
+            'source': 'grab'
+        },
+        {
+            'url': 'https://www.grab.com/sg/press/others/grab-launches-first-artificial-intelligence-centre-of-excellence-with-support-from-digital-industry-singapore/',
+            'title': 'Grab Launches First Artificial Intelligence Centre of Excellence',
+            'publish_date': datetime(2025, 5, 23),
+            'original_date_text': '23 May 2025',
+            'category': 'Others',
+            'description': 'Centre aims to push the boundaries of AI innovation to improve accessibility; productivity and growth',
+            'source': 'grab'
+        },
+        {
+            'url': 'https://www.grab.com/sg/press/others/grab-announces-leadership-appointments-in-singapore-and-vietnam/',
+            'title': 'Grab Announces Leadership Appointments in Singapore and Vietnam',
+            'publish_date': datetime(2025, 5, 5),
+            'original_date_text': '5 May 2025',
+            'category': 'Others',
+            'description': 'Alejandro Osorio appointed as Managing Director of Grab Singapore',
+            'source': 'grab'
+        }
+    ]
+    
+    urls = [article['url'] for article in demo_articles]
+    print(f"Found {len(urls)} article links (from mock data).")
+    return urls, demo_articles
 
 if __name__ == '__main__':
     import socket
