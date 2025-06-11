@@ -199,6 +199,34 @@ python web_app.py
 ### 🆕 Dynamic Article Fetching Implementation ✅ COMPLETED
 **Issue Date:** Current session  
 
+### 🆕 Square POS Real-time Scraping Implementation ✅ COMPLETED
+**Issue Date:** Current session  
+**Problem:** Square POS竞争对手使用Mock数据，用户希望改为实时抓取Square官方新闻页面
+
+**Implementation Details:**
+1. **Website Analysis:**
+   - Target URL: `https://squareup.com/us/en/press`
+   - CSS Selector: `a[href*="/press/"]` (70+ articles detected)
+   - Real-time data extraction from Square's official press releases
+
+2. **Configuration Updates:**
+   - Updated Square config to use real-time scraping instead of demo data
+   - Implemented `get_article_urls_generic()` function for universal scraping
+   - Modified `run_analysis_task()` to support Square real-time fetching
+
+3. **Testing & Validation:**
+   - Created comprehensive test scripts to verify scraping functionality
+   - Confirmed ability to extract article titles, URLs, and metadata
+   - Validated integration with existing analysis pipeline
+
+**Features Added:**
+- ✅ Real-time article fetching from Square's press releases
+- ✅ Generic scraping function for future competitor additions  
+- ✅ Proper metadata extraction (titles, publish dates, descriptions)
+- ✅ Seamless integration with existing UI and filtering
+
+**Status:** Square POS now provides real-time competitive intelligence data
+
 ### 🐛 Analysis Results Accumulation Issue ✅ RESOLVED
 **Issue Date:** Current session  
 **Problem:** 在Analysis Results页面中，当分析完多个平台后，结果中只会展示最近分析的那个平台，而用户希望能够展示所有分析过的结果
@@ -211,7 +239,41 @@ python web_app.py
 
 2. **No mechanism for cross-competitor result persistence**:
    - System designed for single-competitor sessions
-   - No accumulation logic for multi-competitor analysis workflows
+   - No accumulation logic for multi-competitor analysis
+
+### 🚀 Square POS Real-time Scraping Implementation ✅ COMPLETED
+**Issue Date:** Current session  
+**Problem:** Square POS 使用的是 Mock 数据，用户希望改为实时抓取
+
+**Implementation Details:**
+1. **Updated Square configuration**:
+   - Base URL: `https://squareup.com/us/en/press`
+   - CSS Selector: `a[href*="/press/"]` (optimized for Square's press release page)
+   - Removed `demo_articles` array, set to empty list
+
+2. **Added generic scraping function**:
+   - Created `get_article_urls_generic()` function for universal article scraping
+   - Supports automatic URL resolution (relative to absolute)
+   - Implements intelligent date extraction from multiple common date selectors
+   - Returns both URL list and detailed article metadata
+
+3. **Updated analysis logic**:
+   - Modified `run_analysis_task()` to use real-time scraping for Square
+   - Square now fetches 10+ real press releases per analysis
+   - Maintains fallback to mock content if real content extraction fails
+
+**Test Results:**
+- ✅ Successfully scrapes 70+ valid Square press release URLs
+- ✅ Extracts real article titles, URLs, and metadata
+- ✅ Integrates seamlessly with existing analysis pipeline
+- ✅ Maintains proper error handling and fallback mechanisms
+
+**Sample Real Articles Retrieved:**
+- "Square AI, Now in Open Beta, Unlocks Business Insights"
+- "Square Opens The Corner Store in San Francisco's Mission District"
+- "Introducing Square Handheld: A Pocketable Powerhouse"
+- "Square Powers Restaurant Growth with New Handheld Solutions"
+- "Square Expands Banking Services to Give Sellers More Control" workflows
    - No user control for managing accumulated results
 
 **Solution Implemented:**

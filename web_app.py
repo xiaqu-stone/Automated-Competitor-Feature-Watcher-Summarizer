@@ -129,40 +129,11 @@ COMPETITORS = {
     },
     'square': {
         'name': 'Square POS',
-        'base_url': 'https://www.squareup.com/us/en/press',
-        'selector': 'article.press-release h3 > a',
+        'base_url': 'https://squareup.com/us/en/press',
+        'selector': 'a[href*="/press/"]',
         'cache_file': 'square_articles.txt',
         'color': 'info',
-        'demo_articles': [
-            {
-                'url': 'https://www.squareup.com/us/en/press/square-launches-new-ai-powered-inventory-management',
-                'title': 'Square Launches New AI-Powered Inventory Management',
-                'publish_date': '2025-01-15T00:00:00',
-                'category': 'AI Innovation',
-                'description': 'Revolutionary AI system for automated inventory tracking and predictive restocking'
-            },
-            {
-                'url': 'https://www.squareup.com/us/en/press/square-introduces-contactless-payment-solutions-for-small-business',
-                'title': 'Square Introduces Enhanced Contactless Payment Solutions for Small Business',
-                'publish_date': '2025-01-13T00:00:00',
-                'category': 'Payment Innovation',
-                'description': 'New NFC and mobile payment capabilities designed for small and medium businesses'
-            },
-            {
-                'url': 'https://www.squareup.com/us/en/press/square-expands-pos-system-with-advanced-analytics-dashboard',
-                'title': 'Square Expands POS System with Advanced Analytics Dashboard',
-                'publish_date': '2025-01-11T00:00:00',
-                'category': 'Product Enhancement',
-                'description': 'Comprehensive business intelligence platform with real-time sales analytics'
-            },
-            {
-                'url': 'https://www.squareup.com/us/en/press/square-partners-with-major-banks-for-instant-deposit-feature',
-                'title': 'Square Partners with Major Banks for Instant Deposit Feature',
-                'publish_date': '2025-01-07T00:00:00',
-                'category': 'Partnership',
-                'description': 'Strategic banking partnerships enabling instant fund transfers for merchants'
-            }
-        ]
+        'demo_articles': []  # No demo articles needed for live scraping
     }
 }
 
@@ -340,8 +311,9 @@ def run_analysis_task():
             
             print(f"🔍 Getting article URL list for {competitor_name}...")
             
-            # Try dynamic fetching for Grab, use demo data for others
+            # Try dynamic fetching for all competitors with real URLs, fallback to demo data
             if app_state['selected_competitor'] == 'grab':
+                # Use Grab-specific function
                 result = get_article_urls(competitor_config['base_url'], competitor_config['selector'])
                 
                 # Handle both old and new function signatures
@@ -354,8 +326,25 @@ def run_analysis_task():
                     # Fallback for old signature
                     all_urls = result
                     articles = []
+                
+            elif app_state['selected_competitor'] == 'square':
+                # Use real-time scraping for Square POS
+                print(f"🔍 Fetching real-time articles from {competitor_name}...")
+                result = get_article_urls_generic(competitor_config['base_url'], competitor_config['selector'])
+                
+                if isinstance(result, tuple):
+                    all_urls, articles = result
+                    # Store article metadata
+                    for article in articles:
+                        app_state['article_metadata'][article['url']] = article
+                else:
+                    all_urls = result
+                    articles = []
+                
+                print(f"✅ Found {len(all_urls)} real articles from {competitor_name}")
+                
             else:
-                # Use demo data for other competitors
+                # Use demo data for other competitors (FeedMe)
                 demo_articles = competitor_config['demo_articles']
                 all_urls = [article['url'] for article in demo_articles]
                 for article in demo_articles:
@@ -884,6 +873,120 @@ def get_mock_content(competitor, url):
         mock_data = MOCK_CONTENT[competitor][url]
         return f"# {mock_data['title']}\n\n{mock_data['content']}"
     return None
+
+def get_article_urls_generic(base_url, selector, limit=20):
+    """
+    Generic function to fetch article URLs from any website
+    使用通用方法从任何网站获取文章链接
+    """
+    print(f"🔍 Fetching articles from: {base_url}")
+    print(f"   Using selector: {selector}")
+    print(f"   Limit: {limit} articles")
+    
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+        
+        response = requests.get(base_url, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        print(f"✅ Successfully fetched page (Status: {response.status_code})")
+        print(f"📄 Content length: {len(response.content)} bytes")
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Find article links using the provided selector
+        links = soup.select(selector)
+        print(f"🔍 Found {len(links)} potential article links")
+        
+        articles = []
+        valid_articles = 0
+        
+        for i, link in enumerate(links[:limit * 2]):  # Get more than needed in case some are invalid
+            try:
+                # Extract URL
+                url = link.get('href', '')
+                
+                # Make URL absolute if relative
+                if url.startswith('/'):
+                    from urllib.parse import urljoin
+                    url = urljoin(base_url, url)
+                elif not url.startswith('http'):
+                    continue
+                
+                # Extract title
+                title = link.get_text(strip=True) or link.get('title', '')
+                if not title:
+                    # Try to find title in parent elements
+                    parent = link.parent
+                    if parent:
+                        title = parent.get_text(strip=True)
+                
+                # Skip if URL or title is empty
+                if not url or not title:
+                    continue
+                
+                # Try to extract publish date (this is site-specific)
+                publish_date = datetime.now()  # Default to now
+                original_date_text = "Today"
+                
+                # Look for date in nearby elements (common patterns)
+                date_element = None
+                for date_selector in ['.date', '.published', '.timestamp', 'time', '[datetime]']:
+                    date_element = link.find_parent().find(date_selector) if link.find_parent() else None
+                    if date_element:
+                        break
+                
+                if date_element:
+                    date_text = date_element.get_text(strip=True) or date_element.get('datetime', '')
+                    if date_text:
+                        original_date_text = date_text
+                        # Try to parse the date (basic parsing)
+                        try:
+                            from dateutil import parser
+                            publish_date = parser.parse(date_text)
+                        except:
+                            pass  # Keep default date if parsing fails
+                
+                article = {
+                    'url': url,
+                    'title': title,
+                    'publish_date': publish_date,
+                    'original_date_text': original_date_text,
+                    'category': 'News',
+                    'description': title,  # Use title as description fallback
+                    'source': 'generic'
+                }
+                
+                articles.append(article)
+                valid_articles += 1
+                print(f"  ✓ {valid_articles:2d}. {title[:60]}... ({original_date_text})")
+                
+                if valid_articles >= limit:
+                    break
+                    
+            except Exception as e:
+                print(f"  ❌ Error processing article link {i}: {e}")
+                continue
+        
+        if articles:
+            # Sort by publish date (newest first)
+            articles.sort(key=lambda x: x['publish_date'], reverse=True)
+            print(f"✅ Successfully fetched {len(articles)} articles, sorted by date (newest first)")
+            return [article['url'] for article in articles], articles
+        else:
+            print("⚠️  No valid articles found")
+            return [], []
+            
+    except Exception as e:
+        print(f"❌ Failed to fetch articles from {base_url}: {e}")
+        return [], []
 
 if __name__ == '__main__':
     import socket
